@@ -1,0 +1,117 @@
+<div id="userManagement" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"><span class="fa fa-users"></span>&nbsp;<span translate>User Management</span></h4>
+      </div>
+      <div class="modal-body">
+
+        <!-- Add User Form -->
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title"><span class="fa fa-user-plus"></span>&nbsp;<span translate>Add User</span></h5>
+          </div>
+          <div class="panel-body">
+            <form class="form-inline" ng-submit="createUser()">
+              <div class="form-group" style="margin-right: 10px;">
+                <input type="text" class="form-control" placeholder="Username" ng-model="newUser.username" required />
+              </div>
+              <div class="form-group" style="margin-right: 10px;">
+                <input type="email" class="form-control" placeholder="Email (optional)" ng-model="newUser.email" />
+              </div>
+              <div class="form-group" style="margin-right: 10px;">
+                <input type="password" class="form-control" placeholder="Password" ng-model="newUser.password" required />
+              </div>
+              <div class="form-group" style="margin-right: 10px;">
+                <select class="form-control" ng-model="newUser.role">
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary" ng-disabled="!newUser.username || !newUser.password">
+                <span class="fa fa-plus"></span>&nbsp;<span translate>Create</span>
+              </button>
+            </form>
+            <p ng-if="userManagement.createError" class="text-danger" style="margin-top: 10px;">{{userManagement.createError}}</p>
+          </div>
+        </div>
+
+        <!-- User List -->
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th translate>Username</th>
+              <th translate>Email</th>
+              <th translate>Role</th>
+              <th translate>Status</th>
+              <th translate>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="user in managedUsers track by user.id">
+              <td>
+                <span class="fa fa-user"></span>&nbsp;{{user.username}}
+                <span ng-if="user.id === currentUser.id" class="label label-info" style="font-size: 9px;">YOU</span>
+              </td>
+              <td>{{user.email || '-'}}</td>
+              <td>
+                <span ng-if="user.role === 'admin'" class="label label-primary">admin</span>
+                <span ng-if="user.role === 'user'" class="label label-default">user</span>
+              </td>
+              <td>
+                <span ng-if="user.status === 'active'" class="label label-success">active</span>
+                <span ng-if="user.status === 'suspended'" class="label label-warning">suspended</span>
+              </td>
+              <td>
+                <div class="btn-group btn-group-xs">
+                  <button class="btn btn-default" ng-click="editUserPassword(user)" title="Change Password">
+                    <span class="fa fa-key"></span>
+                  </button>
+                  <button class="btn btn-default" ng-click="toggleUserRole(user)" ng-if="user.id !== currentUser.id" title="Toggle Role">
+                    <span class="fa fa-shield"></span>
+                  </button>
+                  <button class="btn btn-default" ng-click="toggleUserStatus(user)" ng-if="user.id !== currentUser.id" title="Toggle Status">
+                    <span class="fa" ng-class="{'fa-ban': user.status === 'active', 'fa-check': user.status !== 'active'}"></span>
+                  </button>
+                  <button class="btn btn-danger" ng-click="deleteUserConfirm(user)" ng-if="user.id !== currentUser.id" title="Delete">
+                    <span class="fa fa-trash"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr ng-if="!managedUsers || managedUsers.length === 0">
+              <td colspan="5" class="text-center text-muted" translate>No users found</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div id="changePasswordModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"><span class="fa fa-key"></span>&nbsp;<span translate>Change Password</span></h4>
+      </div>
+      <div class="modal-body">
+        <p translate translate-value-user="{{editingUser.username}}">Changing password for {%user%}</p>
+        <div class="form-group">
+          <input type="password" class="form-control" placeholder="New Password" ng-model="editingUser.newPassword" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Cancel</button>
+        <button type="button" class="btn btn-primary" ng-click="saveUserPassword()" ng-disabled="!editingUser.newPassword" translate>Save</button>
+      </div>
+    </div>
+  </div>
+</div>

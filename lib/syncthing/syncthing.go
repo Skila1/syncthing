@@ -15,6 +15,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
@@ -24,6 +25,7 @@ import (
 	"github.com/thejerf/suture/v4"
 
 	"github.com/syncthing/syncthing/internal/db"
+	"github.com/syncthing/syncthing/internal/db/sqlite"
 	"github.com/syncthing/syncthing/internal/slogutil"
 	"github.com/syncthing/syncthing/lib/api"
 	"github.com/syncthing/syncthing/lib/build"
@@ -40,6 +42,7 @@ import (
 	"github.com/syncthing/syncthing/lib/tlsutil"
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/ur"
+	"github.com/syncthing/syncthing/lib/users"
 )
 
 const (
@@ -64,6 +67,8 @@ type App struct {
 	mainService       *suture.Supervisor
 	cfg               config.Wrapper
 	sdb               db.DB
+	sqlDB             *sqlite.DB
+	userManager       *users.Manager
 	evLogger          events.Logger
 	cert              tls.Certificate
 	opts              Options
@@ -78,14 +83,39 @@ type App struct {
 	Internals *Internals
 }
 
-func New(cfg config.Wrapper, sdb db.DB, evLogger events.Logger, cert tls.Certificate, opts Options) (*App, error) {
+func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger, cert tls.Certificate, opts Options) (*App, error) {
+	userDataDir := os.Getenv("ST_USER_DATA_DIR")
+	if userDataDir == "" {
+		userDataDir = filepath.Join(locations.GetBaseDir(locations.DataBaseDir), "users")
+	}
+
+	userStore := sqlite.NewUserStore(sqlDB)
+	userMgr := users.NewManager(userStore, userDataDir)
+
+	adminUser := os.Getenv("ST_ADMIN_USER")
+	if adminUser == "" {
+		adminUser = "admin"
+	}
+	adminPass := os.Getenv("ST_ADMIN_PASSWORD")
+	if adminPass != "" {
+		created, err := userMgr.EnsureAdmin(adminUser, adminPass)
+		if err != nil {
+			return nil, fmt.Errorf("ensure admin user: %w", err)
+		}
+		if created {
+			slog.Info("Created initial admin user", "username", adminUser)
+		}
+	}
+
 	a := &App{
-		cfg:      cfg,
-		sdb:      sdb,
-		evLogger: evLogger,
-		opts:     opts,
-		cert:     cert,
-		stopped:  make(chan struct{}),
+		cfg:         cfg,
+		sdb:         sdb,
+		sqlDB:       sqlDB,
+		userManager: userMgr,
+		evLogger:    evLogger,
+		opts:        opts,
+		cert:        cert,
+		stopped:     make(chan struct{}),
 	}
 	close(a.stopped) // Hasn't been started, so shouldn't block on Wait.
 	return a, nil
@@ -415,7 +445,7 @@ func (a *App) setupGUI(m model.Model, defaultSub, diskSub events.BufferedSubscri
 	summaryService := model.NewFolderSummaryService(a.cfg, m, a.myID, a.evLogger)
 	a.mainService.Add(summaryService)
 
-	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB)
+	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager)
 	a.mainService.Add(apiSvc)
 
 	if err := apiSvc.WaitForStart(); err != nil {

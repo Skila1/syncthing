@@ -53,5 +53,8 @@ HEALTHCHECK --interval=1m --timeout=10s \
 
 ENV STGUIADDRESS=0.0.0.0:8384
 ENV STHOMEDIR=/var/syncthing/config
+ENV ST_USER_DATA_DIR=/var/syncthing/users
+ENV ST_ADMIN_USER=admin
+ENV ST_ADMIN_PASSWORD=
 RUN chmod 755 /bin/entrypoint.sh
 ENTRYPOINT ["/bin/entrypoint.sh", "/bin/syncthing"]

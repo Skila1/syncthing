@@ -16,6 +16,12 @@ if [ "$(id -u)" = '0' ]; then
     setcap "$PCAP" "$binary"
   fi
 
+  # Create per-user data directory if configured
+  if [ -n "${ST_USER_DATA_DIR:-}" ]; then
+    mkdir -p "$ST_USER_DATA_DIR"
+    chown "${PUID}:${PGID}" "$ST_USER_DATA_DIR" || true
+  fi
+
   # Chown may fail, which may cause us to be unable to start; but maybe
   # it'll work anyway, so we let the error slide.
   chown "${PUID}:${PGID}" "${HOME}" || true

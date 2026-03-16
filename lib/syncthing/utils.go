@@ -145,15 +145,15 @@ func copyFile(src, dst string) error {
 }
 
 // Opens a database
-func OpenDatabase(path string, deleteRetention time.Duration) (db.DB, error) {
+func OpenDatabase(path string, deleteRetention time.Duration) (db.DB, *sqlite.DB, error) {
 	sql, err := sqlite.Open(path, sqlite.WithDeleteRetention(deleteRetention))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	sdb := db.MetricsWrap(sql)
 
-	return sdb, nil
+	return sdb, sql, nil
 }
 
 // Attempts migration of the old (LevelDB-based) database type to the new (SQLite-based) type
