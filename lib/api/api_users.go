@@ -12,6 +12,8 @@ import (
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/syncthing/syncthing/lib/mfa"
+	"github.com/syncthing/syncthing/lib/rand"
 	"github.com/syncthing/syncthing/lib/users"
 )
 
@@ -25,6 +27,12 @@ func (s *service) registerUserEndpoints(mux *httprouter.Router) {
 	mux.HandlerFunc(http.MethodPut, "/rest/users/:id", s.putUser)
 	mux.HandlerFunc(http.MethodDelete, "/rest/users/:id", requireAdmin(s.deleteUser))
 	mux.HandlerFunc(http.MethodPost, "/rest/users/:id/password", s.postUserPassword)
+
+	mux.HandlerFunc(http.MethodPost, "/rest/mfa/enroll", s.postMFAEnroll)
+	mux.HandlerFunc(http.MethodPost, "/rest/mfa/confirm", s.postMFAConfirm)
+	mux.HandlerFunc(http.MethodPost, "/rest/mfa/disable", s.postMFADisable)
+	mux.HandlerFunc(http.MethodPost, "/rest/users/:id/mfa-disable", requireAdmin(s.postAdminDisableMFA))
+	mux.HandlerFunc(http.MethodPost, "/rest/users/:id/reset-password", requireAdmin(s.postAdminResetPassword))
 }
 
 func (s *service) getUsers(w http.ResponseWriter, _ *http.Request) {
@@ -289,6 +297,168 @@ func (s *service) postStorageRecalculate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	sendJSON(w, status)
+}
+
+// --- MFA endpoints ---
+
+func (s *service) postMFAEnroll(w http.ResponseWriter, r *http.Request) {
+	user := userFromRequest(r)
+	if user == nil {
+		forbidden(w)
+		return
+	}
+	if user.MFAEnabled {
+		http.Error(w, "MFA is already enabled", http.StatusConflict)
+		return
+	}
+
+	secret, err := mfa.GenerateSecret()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Store the secret but don't enable MFA yet (needs confirmation)
+	u, err := s.userManager.GetUser(user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	u.MFASecret = secret
+	u.UpdatedAt = 0 // will be set by UpdateUser
+	if err := s.userManager.UpdateUser(u); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	uri := mfa.ProvisioningURI(secret, user.Username)
+	sendJSON(w, map[string]string{
+		"secret": secret,
+		"uri":    uri,
+	})
+}
+
+func (s *service) postMFAConfirm(w http.ResponseWriter, r *http.Request) {
+	user := userFromRequest(r)
+	if user == nil {
+		forbidden(w)
+		return
+	}
+
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	secret, err := s.userManager.GetMFASecret(user.ID)
+	if err != nil || secret == "" {
+		http.Error(w, "MFA enrollment not started", http.StatusBadRequest)
+		return
+	}
+
+	valid, err := mfa.ValidateCode(secret, req.Code)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !valid {
+		http.Error(w, "Invalid verification code", http.StatusForbidden)
+		return
+	}
+
+	// Enable MFA
+	if err := s.userManager.EnableMFA(user.ID, secret); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Generate recovery codes
+	codes := make([]string, users.MFARecoveryCodeCount)
+	for i := range codes {
+		codes[i] = rand.String(users.MFARecoveryCodeLength)
+	}
+	if err := s.userManager.StoreRecoveryCodes(user.ID, codes); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sendJSON(w, map[string]interface{}{
+		"enabled":       true,
+		"recoveryCodes": codes,
+	})
+}
+
+func (s *service) postMFADisable(w http.ResponseWriter, r *http.Request) {
+	user := userFromRequest(r)
+	if user == nil {
+		forbidden(w)
+		return
+	}
+
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Require password confirmation
+	if _, err := s.userManager.Authenticate(user.Username, req.Password); err != nil {
+		http.Error(w, "Invalid password", http.StatusForbidden)
+		return
+	}
+
+	if err := s.userManager.DisableMFA(user.ID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *service) postAdminDisableMFA(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUserID(r)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.userManager.DisableMFA(id); err != nil {
+		if err == users.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *service) postAdminResetPassword(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUserID(r)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	token, err := s.userManager.CreatePasswordResetToken(id)
+	if err != nil {
+		if err == users.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sendJSON(w, map[string]string{
+		"resetToken": token,
+	})
 }
 
 func parseUserID(r *http.Request) (int64, error) {

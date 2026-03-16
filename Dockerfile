@@ -56,5 +56,11 @@ ENV STHOMEDIR=/var/syncthing/config
 ENV ST_USER_DATA_DIR=/var/syncthing/users
 ENV ST_ADMIN_USER=admin
 ENV ST_ADMIN_PASSWORD=
+ENV ST_SMTP_HOST=
+ENV ST_SMTP_PORT=587
+ENV ST_SMTP_USER=
+ENV ST_SMTP_PASSWORD=
+ENV ST_SMTP_FROM=
+ENV ST_SMTP_TLS=true
 RUN chmod 755 /bin/entrypoint.sh
 ENTRYPOINT ["/bin/entrypoint.sh", "/bin/syncthing"]

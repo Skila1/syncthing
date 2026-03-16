@@ -46,6 +46,7 @@
               <th translate>Role</th>
               <th translate>Storage</th>
               <th translate>Status</th>
+              <th translate>2FA</th>
               <th translate>Actions</th>
             </tr>
           </thead>
@@ -87,9 +88,18 @@
                 <span ng-if="user.status === 'suspended'" class="label label-warning">suspended</span>
               </td>
               <td>
+                <span ng-if="user.mfaEnabled" class="label label-info" style="font-size: 9px; margin-right: 4px;">2FA</span>
+              </td>
+              <td>
                 <div class="btn-group btn-group-xs">
                   <button class="btn btn-default" ng-click="editUserPassword(user)" title="Change Password">
                     <span class="fa fa-key"></span>
+                  </button>
+                  <button class="btn btn-default" ng-click="adminResetPassword(user)" ng-if="user.id !== currentUser.id" title="Generate Reset Token">
+                    <span class="fa fa-envelope"></span>
+                  </button>
+                  <button class="btn btn-default" ng-click="adminDisableMFA(user)" ng-if="user.mfaEnabled && user.id !== currentUser.id" title="Disable 2FA">
+                    <span class="fa fa-unlock"></span>
                   </button>
                   <button class="btn btn-default" ng-click="toggleUserRole(user)" ng-if="user.id !== currentUser.id" title="Toggle Role">
                     <span class="fa fa-shield"></span>
@@ -104,7 +114,7 @@
               </td>
             </tr>
             <tr ng-if="!managedUsers || managedUsers.length === 0">
-              <td colspan="6" class="text-center text-muted" translate>No users found</td>
+              <td colspan="8" class="text-center text-muted" translate>No users found</td>
             </tr>
           </tbody>
         </table>
@@ -167,6 +177,28 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal" translate>Cancel</button>
         <button type="button" class="btn btn-primary" ng-click="saveUserQuota()" translate>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Token Modal -->
+<div id="resetTokenModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"><span class="fa fa-envelope"></span>&nbsp;<span translate>Password Reset Token</span></h4>
+      </div>
+      <div class="modal-body">
+        <p translate translate-value-user="{{userManagement.resetUsername}}">Reset token generated for {%user%}. Share this token with the user securely.</p>
+        <div class="well text-center" style="word-break: break-all; font-family: monospace; font-size: 13px; user-select: all;">
+          {{userManagement.resetToken}}
+        </div>
+        <p class="text-warning"><small><span class="fa fa-exclamation-triangle"></span>&nbsp;<span translate>This token expires in 1 hour. The user can enter it on the login page under "Reset password with token".</span></small></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
       </div>
     </div>
   </div>

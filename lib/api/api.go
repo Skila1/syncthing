@@ -385,6 +385,8 @@ func (s *service) Serve(ctx context.Context) error {
 		handler = muAuthMW
 
 		restMux.Handler(http.MethodPost, "/rest/noauth/auth/password", http.HandlerFunc(muAuthMW.passwordAuthHandler))
+		restMux.Handler(http.MethodPost, "/rest/noauth/auth/mfa-verify", http.HandlerFunc(muAuthMW.mfaVerifyHandler))
+		restMux.Handler(http.MethodPost, "/rest/noauth/auth/reset-password", http.HandlerFunc(muAuthMW.resetPasswordHandler))
 		restMux.Handler(http.MethodPost, "/rest/noauth/auth/logout", http.HandlerFunc(muAuthMW.handleLogout))
 
 		s.registerUserEndpoints(restMux)
@@ -724,6 +726,7 @@ func (s *service) getJSMetadata(w http.ResponseWriter, r *http.Request) {
 		metaMap["userRole"] = user.Role
 		metaMap["userId"] = user.ID
 		metaMap["multiUser"] = true
+		metaMap["mfaEnabled"] = user.MFAEnabled
 	}
 
 	meta, _ := json.Marshal(metaMap)

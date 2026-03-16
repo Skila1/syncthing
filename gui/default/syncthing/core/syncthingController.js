@@ -82,6 +82,7 @@ angular.module('syncthing.core')
                 id: window.metadata.userId,
                 username: window.metadata.username,
                 role: window.metadata.userRole,
+                mfaEnabled: window.metadata.mfaEnabled || false,
             };
             $http.get(urlbase + '/storage/usage').success(function (data) {
                 $scope.storageStatus = data;
@@ -92,6 +93,14 @@ angular.module('syncthing.core')
             username: '',
             password: '',
             errors: {},
+            mfaRequired: false,
+            mfaPending: '',
+            mfaCode: '',
+            rememberDevice: false,
+            resetMode: false,
+            resetToken: '',
+            newPassword: '',
+            resetSuccess: false,
         };
         $scope.completion = {};
         $scope.config = {};
@@ -163,8 +172,14 @@ angular.module('syncthing.core')
               username: $scope.login.username,
               password: $scope.login.password,
               stayLoggedIn: $scope.login.stayLoggedIn,
-            }).then(function () {
-                location.reload();
+            }).then(function (response) {
+                if (response.data && response.data.mfaRequired) {
+                    $scope.login.mfaRequired = true;
+                    $scope.login.mfaPending = response.data.mfaPending;
+                    $scope.login.inProgress = false;
+                } else {
+                    location.reload();
+                }
             }).catch(function (response) {
                 if (response.status === 403) {
                     $scope.login.errors.badLogin = true;
@@ -172,9 +187,56 @@ angular.module('syncthing.core')
                     $scope.login.errors.failed = true;
                     console.log('Password authentication failed:', response);
                 }
-            }).finally(function () {
                 $scope.login.inProgress = false;
             });
+        };
+
+        $scope.verifyMFA = function () {
+            $scope.login.inProgress = true;
+            $scope.login.errors = {};
+            $http.post(authUrlbase + '/mfa-verify', {
+                mfaPending: $scope.login.mfaPending,
+                code: $scope.login.mfaCode,
+                stayLoggedIn: $scope.login.stayLoggedIn,
+                rememberDevice: $scope.login.rememberDevice,
+            }).then(function () {
+                location.reload();
+            }).catch(function (response) {
+                if (response.status === 403) {
+                    $scope.login.errors.badMFA = true;
+                } else if (response.status === 401) {
+                    $scope.login.errors.mfaExpired = true;
+                    $scope.login.mfaRequired = false;
+                } else {
+                    $scope.login.errors.failed = true;
+                }
+                $scope.login.inProgress = false;
+            });
+        };
+
+        $scope.showResetPassword = function () {
+            $scope.login.resetMode = true;
+        };
+
+        $scope.submitResetPassword = function () {
+            $scope.login.inProgress = true;
+            $scope.login.errors = {};
+            $http.post(authUrlbase + '/reset-password', {
+                token: $scope.login.resetToken,
+                newPassword: $scope.login.newPassword,
+            }).then(function () {
+                $scope.login.resetSuccess = true;
+                $scope.login.resetMode = false;
+                $scope.login.inProgress = false;
+            }).catch(function (response) {
+                $scope.login.errors.resetFailed = true;
+                $scope.login.inProgress = false;
+            });
+        };
+
+        $scope.cancelResetPassword = function () {
+            $scope.login.resetMode = false;
+            $scope.login.errors = {};
         };
 
         $scope.logout = function() {
@@ -756,6 +818,96 @@ angular.module('syncthing.core')
             $http.get(urlbase + '/storage/usage').success(function (data) {
                 $scope.storageStatus = data;
             });
+        };
+
+        // --- MFA Management ---
+        $scope.mfaSetup = {
+            enrolling: false,
+            secret: '',
+            uri: '',
+            confirmCode: '',
+            recoveryCodes: null,
+            error: '',
+        };
+
+        $scope.startMFAEnroll = function () {
+            $scope.mfaSetup.error = '';
+            $scope.mfaSetup.recoveryCodes = null;
+            $http.post(urlbase + '/mfa/enroll').success(function (data) {
+                $scope.mfaSetup.enrolling = true;
+                $scope.mfaSetup.secret = data.secret;
+                $scope.mfaSetup.uri = data.uri;
+                $scope.mfaSetup.encodedUri = encodeURIComponent(data.uri);
+                $('#mfaEnrollModal').modal('show');
+            }).error(function (data) {
+                $scope.mfaSetup.error = data || 'Failed to start enrollment';
+            });
+        };
+
+        $scope.confirmMFAEnroll = function () {
+            $scope.mfaSetup.error = '';
+            $http.post(urlbase + '/mfa/confirm', {
+                code: $scope.mfaSetup.confirmCode
+            }).success(function (data) {
+                $scope.mfaSetup.recoveryCodes = data.recoveryCodes;
+                $scope.mfaSetup.enrolling = false;
+                if ($scope.currentUser) {
+                    $scope.currentUser.mfaEnabled = true;
+                }
+            }).error(function (data, status) {
+                if (status === 403) {
+                    $scope.mfaSetup.error = 'Invalid verification code. Please try again.';
+                } else {
+                    $scope.mfaSetup.error = data || 'Verification failed';
+                }
+            });
+        };
+
+        $scope.disableMFA = function () {
+            var password = prompt('Enter your password to disable MFA:');
+            if (!password) return;
+            $http.post(urlbase + '/mfa/disable', { password: password }).success(function () {
+                if ($scope.currentUser) {
+                    $scope.currentUser.mfaEnabled = false;
+                }
+                $('#mfaEnrollModal').modal('hide');
+            }).error(function (data, status) {
+                if (status === 403) {
+                    alert('Invalid password.');
+                } else {
+                    $scope.emitHTTPError(data, status);
+                }
+            });
+        };
+
+        $scope.closeMFAModal = function () {
+            $scope.mfaSetup = {
+                enrolling: false,
+                secret: '',
+                uri: '',
+                confirmCode: '',
+                recoveryCodes: null,
+                error: '',
+            };
+            $('#mfaEnrollModal').modal('hide');
+        };
+
+        // Admin: disable MFA for a user
+        $scope.adminDisableMFA = function (user) {
+            if (confirm('Disable MFA for "' + user.username + '"? They will need to re-enroll.')) {
+                $http.post(urlbase + '/users/' + user.id + '/mfa-disable').success(function () {
+                    $scope.refreshUsers();
+                }).error($scope.emitHTTPError);
+            }
+        };
+
+        // Admin: generate password reset token
+        $scope.adminResetPassword = function (user) {
+            $http.post(urlbase + '/users/' + user.id + '/reset-password').success(function (data) {
+                $scope.userManagement.resetToken = data.resetToken;
+                $scope.userManagement.resetUsername = user.username;
+                $('#resetTokenModal').modal('show');
+            }).error($scope.emitHTTPError);
         };
 
         function refreshNoAuthWarning() {

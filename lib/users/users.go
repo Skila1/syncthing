@@ -32,6 +32,12 @@ const (
 
 	QuotaWarningPercent  = 80
 	QuotaCriticalPercent = 95
+
+	PasswordResetLifetime  = 1 * time.Hour
+	PasswordResetTokenLen  = 64
+	MFARecoveryCodeCount   = 10
+	MFARecoveryCodeLength  = 8
+	RememberDeviceLifetime = 30 * 24 * time.Hour
 )
 
 var (
@@ -40,6 +46,10 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrAccountSuspended   = errors.New("account is suspended")
 	ErrQuotaExceeded      = errors.New("storage quota exceeded")
+	ErrMFARequired        = errors.New("MFA verification required")
+	ErrInvalidMFACode     = errors.New("invalid MFA code")
+	ErrResetTokenInvalid  = errors.New("reset token is invalid or expired")
+	ErrMFANotEnabled      = errors.New("MFA is not enabled for this user")
 )
 
 type User struct {
@@ -51,6 +61,8 @@ type User struct {
 	RootPath     string `json:"rootPath" db:"root_path"`
 	QuotaBytes   int64  `json:"quotaBytes" db:"quota_bytes"`
 	UsedBytes    int64  `json:"usedBytes" db:"used_bytes"`
+	MFAEnabled   bool   `json:"mfaEnabled" db:"mfa_enabled"`
+	MFASecret    string `json:"-" db:"mfa_secret"`
 	CreatedAt    int64  `json:"createdAt" db:"created_at"`
 	UpdatedAt    int64  `json:"updatedAt" db:"updated_at"`
 	Status       string `json:"status" db:"status"`
@@ -66,6 +78,23 @@ type Session struct {
 	CreatedAt int64  `json:"createdAt" db:"created_at"`
 	ExpiresAt int64  `json:"expiresAt" db:"expires_at"`
 	IPAddress string `json:"ipAddress" db:"ip_address"`
+}
+
+// PasswordReset represents a password reset token.
+type PasswordReset struct {
+	ID        int64  `db:"id"`
+	UserID    int64  `db:"user_id"`
+	Token     string `db:"token"`
+	ExpiresAt int64  `db:"expires_at"`
+	Used      bool   `db:"used"`
+}
+
+// MFARecoveryCode represents a one-time MFA recovery code.
+type MFARecoveryCode struct {
+	ID       int64  `db:"id"`
+	UserID   int64  `db:"user_id"`
+	CodeHash string `db:"code_hash"`
+	Used     bool   `db:"used"`
 }
 
 // Store defines the interface for user data persistence.
@@ -85,6 +114,16 @@ type Store interface {
 	DeleteUserSessions(userID int64) error
 	CountUserSessions(userID int64) (int, error)
 	DeleteOldestUserSession(userID int64) error
+
+	CreatePasswordReset(userID int64, token string, expiresAt int64) error
+	GetPasswordReset(token string) (*PasswordReset, error)
+	MarkPasswordResetUsed(token string) error
+	DeleteExpiredPasswordResets() error
+
+	SaveMFARecoveryCodes(userID int64, codeHashes []string) error
+	GetMFARecoveryCodes(userID int64) ([]MFARecoveryCode, error)
+	MarkMFARecoveryCodeUsed(id int64) error
+	DeleteMFARecoveryCodes(userID int64) error
 }
 
 // Manager coordinates user and session operations with an in-memory session
@@ -396,6 +435,107 @@ func (m *Manager) SetQuota(userID int64, quotaBytes int64) error {
 	user.QuotaBytes = quotaBytes
 	user.UpdatedAt = time.Now().UnixNano()
 	return m.store.UpdateUser(user)
+}
+
+// --- MFA ---
+
+// EnableMFA stores the TOTP secret and enables MFA for the user.
+func (m *Manager) EnableMFA(userID int64, secret string) error {
+	user, err := m.store.GetUser(userID)
+	if err != nil {
+		return err
+	}
+	user.MFASecret = secret
+	user.MFAEnabled = true
+	user.UpdatedAt = time.Now().UnixNano()
+	return m.store.UpdateUser(user)
+}
+
+// DisableMFA removes MFA configuration for a user.
+func (m *Manager) DisableMFA(userID int64) error {
+	user, err := m.store.GetUser(userID)
+	if err != nil {
+		return err
+	}
+	user.MFASecret = ""
+	user.MFAEnabled = false
+	user.UpdatedAt = time.Now().UnixNano()
+	if err := m.store.UpdateUser(user); err != nil {
+		return err
+	}
+	return m.store.DeleteMFARecoveryCodes(userID)
+}
+
+// GetMFASecret returns the user's MFA secret (for enrollment verification).
+func (m *Manager) GetMFASecret(userID int64) (string, error) {
+	user, err := m.store.GetUser(userID)
+	if err != nil {
+		return "", err
+	}
+	return user.MFASecret, nil
+}
+
+// StoreRecoveryCodes hashes and saves recovery codes. Returns the plaintext
+// codes (caller should display them to the user exactly once).
+func (m *Manager) StoreRecoveryCodes(userID int64, codes []string) error {
+	hashes := make([]string, len(codes))
+	for i, code := range codes {
+		h, err := bcrypt.GenerateFromPassword([]byte(code), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("hash recovery code: %w", err)
+		}
+		hashes[i] = string(h)
+	}
+	return m.store.SaveMFARecoveryCodes(userID, hashes)
+}
+
+// ValidateRecoveryCode checks a recovery code against stored hashes. On
+// success the code is marked as used.
+func (m *Manager) ValidateRecoveryCode(userID int64, code string) (bool, error) {
+	codes, err := m.store.GetMFARecoveryCodes(userID)
+	if err != nil {
+		return false, err
+	}
+	for _, rc := range codes {
+		if rc.Used {
+			continue
+		}
+		if bcrypt.CompareHashAndPassword([]byte(rc.CodeHash), []byte(code)) == nil {
+			return true, m.store.MarkMFARecoveryCodeUsed(rc.ID)
+		}
+	}
+	return false, nil
+}
+
+// --- Password Reset ---
+
+// CreatePasswordResetToken generates a reset token for the given user.
+func (m *Manager) CreatePasswordResetToken(userID int64) (string, error) {
+	_, err := m.store.GetUser(userID)
+	if err != nil {
+		return "", err
+	}
+	token := rand.String(PasswordResetTokenLen)
+	expiresAt := time.Now().Add(PasswordResetLifetime).UnixNano()
+	if err := m.store.CreatePasswordReset(userID, token, expiresAt); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// ResetPassword validates a reset token and sets the new password.
+func (m *Manager) ResetPassword(token, newPassword string) error {
+	reset, err := m.store.GetPasswordReset(token)
+	if err != nil {
+		return ErrResetTokenInvalid
+	}
+	if reset.Used || reset.ExpiresAt < time.Now().UnixNano() {
+		return ErrResetTokenInvalid
+	}
+	if err := m.store.MarkPasswordResetUsed(token); err != nil {
+		return err
+	}
+	return m.SetPassword(reset.UserID, newPassword)
 }
 
 func (m *Manager) CleanExpiredSessions() error {

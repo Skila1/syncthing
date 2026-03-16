@@ -24,7 +24,7 @@ func NewUserStore(db *DB) *UserStore {
 	return &UserStore{db: db.baseDB}
 }
 
-const userColumns = `id, username, email, password_hash, role, root_path, quota_bytes, used_bytes, created_at, updated_at, status`
+const userColumns = `id, username, email, password_hash, role, root_path, quota_bytes, used_bytes, mfa_enabled, mfa_secret, created_at, updated_at, status`
 
 func (s *UserStore) CreateUser(username, email, passwordHash, role, rootPath string) (*users.User, error) {
 	s.db.updateLock.Lock()
@@ -32,8 +32,8 @@ func (s *UserStore) CreateUser(username, email, passwordHash, role, rootPath str
 
 	now := time.Now().UnixNano()
 	result, err := s.db.stmt(`
-		INSERT INTO users (username, email, password_hash, role, root_path, quota_bytes, used_bytes, created_at, updated_at, status)
-		VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, 'active')
+		INSERT INTO users (username, email, password_hash, role, root_path, quota_bytes, used_bytes, mfa_enabled, mfa_secret, created_at, updated_at, status)
+		VALUES (?, ?, ?, ?, ?, 0, 0, 0, '', ?, ?, 'active')
 	`).Exec(username, email, passwordHash, role, rootPath, now, now)
 	if err != nil {
 		if isUniqueConstraintError(err) {
@@ -110,10 +110,12 @@ func (s *UserStore) UpdateUser(user *users.User) error {
 	_, err := s.db.stmt(`
 		UPDATE users
 		SET username = ?, email = ?, password_hash = ?, role = ?, root_path = ?,
-		    quota_bytes = ?, used_bytes = ?, updated_at = ?, status = ?
+		    quota_bytes = ?, used_bytes = ?, mfa_enabled = ?, mfa_secret = ?,
+		    updated_at = ?, status = ?
 		WHERE id = ?
 	`).Exec(user.Username, user.Email, user.PasswordHash, user.Role, user.RootPath,
-		user.QuotaBytes, user.UsedBytes, user.UpdatedAt, user.Status, user.ID)
+		user.QuotaBytes, user.UsedBytes, user.MFAEnabled, user.MFASecret,
+		user.UpdatedAt, user.Status, user.ID)
 	return wrap(err)
 }
 
@@ -214,6 +216,102 @@ func (s *UserStore) DeleteOldestUserSession(userID int64) error {
 			LIMIT 1
 		)
 	`).Exec(userID)
+	return wrap(err)
+}
+
+// --- Password Reset ---
+
+func (s *UserStore) CreatePasswordReset(userID int64, token string, expiresAt int64) error {
+	s.db.updateLock.Lock()
+	defer s.db.updateLock.Unlock()
+
+	_, err := s.db.stmt(`
+		INSERT INTO password_resets (user_id, token, expires_at, used)
+		VALUES (?, ?, ?, 0)
+	`).Exec(userID, token, expiresAt)
+	return wrap(err)
+}
+
+func (s *UserStore) GetPasswordReset(token string) (*users.PasswordReset, error) {
+	var pr users.PasswordReset
+	err := s.db.stmt(`
+		SELECT id, user_id, token, expires_at, used
+		FROM password_resets WHERE token = ?
+	`).Get(&pr, token)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, users.ErrResetTokenInvalid
+		}
+		return nil, wrap(err)
+	}
+	return &pr, nil
+}
+
+func (s *UserStore) MarkPasswordResetUsed(token string) error {
+	s.db.updateLock.Lock()
+	defer s.db.updateLock.Unlock()
+
+	_, err := s.db.stmt(`
+		UPDATE password_resets SET used = 1 WHERE token = ?
+	`).Exec(token)
+	return wrap(err)
+}
+
+func (s *UserStore) DeleteExpiredPasswordResets() error {
+	s.db.updateLock.Lock()
+	defer s.db.updateLock.Unlock()
+
+	_, err := s.db.stmt(`
+		DELETE FROM password_resets WHERE expires_at < ? OR used = 1
+	`).Exec(time.Now().UnixNano())
+	return wrap(err)
+}
+
+// --- MFA Recovery Codes ---
+
+func (s *UserStore) SaveMFARecoveryCodes(userID int64, codeHashes []string) error {
+	s.db.updateLock.Lock()
+	defer s.db.updateLock.Unlock()
+
+	// Remove existing codes first
+	if _, err := s.db.stmt(`DELETE FROM mfa_recovery WHERE user_id = ?`).Exec(userID); err != nil {
+		return wrap(err)
+	}
+	for _, hash := range codeHashes {
+		if _, err := s.db.stmt(`
+			INSERT INTO mfa_recovery (user_id, code_hash, used) VALUES (?, ?, 0)
+		`).Exec(userID, hash); err != nil {
+			return wrap(err)
+		}
+	}
+	return nil
+}
+
+func (s *UserStore) GetMFARecoveryCodes(userID int64) ([]users.MFARecoveryCode, error) {
+	var codes []users.MFARecoveryCode
+	err := s.db.stmt(`
+		SELECT id, user_id, code_hash, used
+		FROM mfa_recovery WHERE user_id = ?
+	`).Select(&codes, userID)
+	if err != nil {
+		return nil, wrap(err)
+	}
+	return codes, nil
+}
+
+func (s *UserStore) MarkMFARecoveryCodeUsed(id int64) error {
+	s.db.updateLock.Lock()
+	defer s.db.updateLock.Unlock()
+
+	_, err := s.db.stmt(`UPDATE mfa_recovery SET used = 1 WHERE id = ?`).Exec(id)
+	return wrap(err)
+}
+
+func (s *UserStore) DeleteMFARecoveryCodes(userID int64) error {
+	s.db.updateLock.Lock()
+	defer s.db.updateLock.Unlock()
+
+	_, err := s.db.stmt(`DELETE FROM mfa_recovery WHERE user_id = ?`).Exec(userID)
 	return wrap(err)
 }
 

@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
     root_path TEXT NOT NULL COLLATE BINARY,
     quota_bytes INTEGER NOT NULL DEFAULT 0, -- 0 = unlimited
     used_bytes INTEGER NOT NULL DEFAULT 0,
+    mfa_enabled INTEGER NOT NULL DEFAULT 0, -- 0=disabled, 1=enabled
+    mfa_secret TEXT NOT NULL DEFAULT '' COLLATE BINARY, -- base32-encoded TOTP secret
     created_at INTEGER NOT NULL, -- unix nanos
     updated_at INTEGER NOT NULL, -- unix nanos
     status TEXT NOT NULL DEFAULT 'active' COLLATE BINARY -- 'active', 'suspended', 'deleted'
@@ -33,4 +35,27 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 CREATE INDEX IF NOT EXISTS user_sessions_user_id ON user_sessions (user_id)
 ;
 CREATE INDEX IF NOT EXISTS user_sessions_expires_at ON user_sessions (expires_at)
+;
+
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE COLLATE BINARY,
+    expires_at INTEGER NOT NULL, -- unix nanos
+    used INTEGER NOT NULL DEFAULT 0 -- 0=unused, 1=used
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS password_resets_token ON password_resets (token)
+;
+CREATE INDEX IF NOT EXISTS password_resets_user_id ON password_resets (user_id)
+;
+
+CREATE TABLE IF NOT EXISTS mfa_recovery (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL COLLATE BINARY,
+    used INTEGER NOT NULL DEFAULT 0 -- 0=unused, 1=used
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS mfa_recovery_user_id ON mfa_recovery (user_id)
 ;

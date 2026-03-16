@@ -123,6 +123,8 @@
               <li ng-if="isAdmin()"><a href="" ng-click="advanced()"><span class="fa fa-fw fa-cogs"></span>&nbsp;<span translate>Advanced</span></a></li>
               <li ng-if="isAdmin()" class="divider" aria-hidden="true"></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showUserManagement()"><span class="fa fa-fw fa-users"></span>&nbsp;<span translate>User Management</span></a></li>
+              <li ng-if="currentUser"><a href="" ng-click="startMFAEnroll()" ng-if="!currentUser.mfaEnabled"><span class="fa fa-fw fa-lock"></span>&nbsp;<span translate>Enable Two-Factor Auth</span></a></li>
+              <li ng-if="currentUser && currentUser.mfaEnabled"><a href="" ng-click="disableMFA()"><span class="fa fa-fw fa-unlock"></span>&nbsp;<span translate>Disable Two-Factor Auth</span></a></li>
               <li class="divider" aria-hidden="true"></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showDeviceIdentification(thisDevice())"><span class="fa fa-fw fa-qrcode"></span>&nbsp;<span translate>Show ID</span></a></li>
               <li ng-if="isAdmin()"><a href="" ng-click="logging.show()"><span class="fa fa-fw fa-wrench"></span>&nbsp;<span translate>Logs</span></a></li>
@@ -345,39 +347,104 @@
 
       <!-- Login form -->
       <div ng-if="!authenticated" class="center-block">
-        <h3 translate>Authentication Required</h3>
 
-        <form ng-submit="authenticatePassword()">
-          <div class="form-group">
-            <label for="user" translate>User</label>
-            <input id="user" class="form-control" type="text" name="user" ng-model="login.username" autofocus required autocomplete="username" />
-          </div>
-
-          <div class="form-group">
-            <label for="password" translate>Password</label>
-            <input id="password" class="form-control" type="password" name="password" ng-model="login.password" ng-trim="false" autocomplete="current-password" />
-          </div>
-
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="stayLoggedIn" name="stayLoggedIn" ng-model="login.stayLoggedIn" >&nbsp;<span translate>Stay logged in</span>
-            </label>
-          </div>
-
-          <div class="row">
-            <div class="col-md-9 login-form-messages">
-              <p ng-if="login.errors.badLogin" class="text-danger" translate>
-                Incorrect user name or password.
-              </p>
-              <p ng-if="login.errors.failed" class="text-danger" translate>
-                Login failed, see Syncthing logs for details.
-              </p>
+        <!-- Password Reset Form -->
+        <div ng-if="login.resetMode">
+          <h3 translate>Reset Password</h3>
+          <form ng-submit="submitResetPassword()">
+            <div class="form-group">
+              <label for="resetToken" translate>Reset Token</label>
+              <input id="resetToken" class="form-control" type="text" ng-model="login.resetToken" placeholder="Paste reset token here" required autofocus />
             </div>
-            <div class="col-md-3 text-right">
-              <button type="submit" id="submit" class="btn btn-default" ng-disabled="login.inProgress" translate>Log In</button>
+            <div class="form-group">
+              <label for="newPassword" translate>New Password</label>
+              <input id="newPassword" class="form-control" type="password" ng-model="login.newPassword" required />
             </div>
-          </div>
-        </form>
+            <div class="row">
+              <div class="col-md-9 login-form-messages">
+                <p ng-if="login.errors.resetFailed" class="text-danger" translate>
+                  Invalid or expired reset token.
+                </p>
+              </div>
+              <div class="col-md-3 text-right">
+                <button type="button" class="btn btn-default" ng-click="cancelResetPassword()" translate>Cancel</button>
+                <button type="submit" class="btn btn-primary" ng-disabled="login.inProgress || !login.resetToken || !login.newPassword" translate>Reset</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- MFA Verification Step -->
+        <div ng-if="login.mfaRequired && !login.resetMode">
+          <h3 translate>Two-Factor Authentication</h3>
+          <p class="text-muted" translate>Enter the code from your authenticator app, or a recovery code.</p>
+          <form ng-submit="verifyMFA()">
+            <div class="form-group">
+              <label for="mfaCode" translate>Verification Code</label>
+              <input id="mfaCode" class="form-control" type="text" ng-model="login.mfaCode" autofocus required autocomplete="one-time-code" pattern="[0-9a-zA-Z]*" />
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" ng-model="login.rememberDevice" />&nbsp;<span translate>Remember this device for 30 days</span>
+              </label>
+            </div>
+            <div class="row">
+              <div class="col-md-9 login-form-messages">
+                <p ng-if="login.errors.badMFA" class="text-danger" translate>
+                  Invalid verification code.
+                </p>
+                <p ng-if="login.errors.mfaExpired" class="text-danger" translate>
+                  MFA session expired. Please log in again.
+                </p>
+              </div>
+              <div class="col-md-3 text-right">
+                <button type="submit" class="btn btn-default" ng-disabled="login.inProgress || !login.mfaCode" translate>Verify</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Standard Login Form -->
+        <div ng-if="!login.mfaRequired && !login.resetMode">
+          <h3 translate>Authentication Required</h3>
+
+          <p ng-if="login.resetSuccess" class="text-success" translate>
+            Password has been reset successfully. Please log in with your new password.
+          </p>
+
+          <form ng-submit="authenticatePassword()">
+            <div class="form-group">
+              <label for="user" translate>User</label>
+              <input id="user" class="form-control" type="text" name="user" ng-model="login.username" autofocus required autocomplete="username" />
+            </div>
+
+            <div class="form-group">
+              <label for="password" translate>Password</label>
+              <input id="password" class="form-control" type="password" name="password" ng-model="login.password" ng-trim="false" autocomplete="current-password" />
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="stayLoggedIn" name="stayLoggedIn" ng-model="login.stayLoggedIn" >&nbsp;<span translate>Stay logged in</span>
+              </label>
+            </div>
+
+            <div class="row">
+              <div class="col-md-9 login-form-messages">
+                <p ng-if="login.errors.badLogin" class="text-danger" translate>
+                  Incorrect user name or password.
+                </p>
+                <p ng-if="login.errors.failed" class="text-danger" translate>
+                  Login failed, see Syncthing logs for details.
+                </p>
+              </div>
+              <div class="col-md-3 text-right">
+                <button type="submit" id="submit" class="btn btn-default" ng-disabled="login.inProgress" translate>Log In</button>
+              </div>
+            </div>
+          </form>
+          <p style="margin-top: 10px;"><a href="" ng-click="showResetPassword()" translate>Reset password with token</a></p>
+        </div>
       </div>
 
       <!-- Storage usage banner (multi-user) -->
@@ -1071,6 +1138,7 @@
   <ng-include src="'syncthing/core/logViewerModalView.html'"></ng-include>
   <ng-include src="'syncthing/device/shareDeviceIdDialogView.html'"></ng-include>
   <ng-include ng-if="isAdmin()" src="'syncthing/admin/userManagementModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/mfaEnrollModalView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>

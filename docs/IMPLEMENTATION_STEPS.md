@@ -56,23 +56,23 @@ Give admins control over how much storage each user can consume.
 
 ## Step 3: Password Reset & MFA/2FA
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 3-4 hours
 **Depends on:** Step 1
 
 Harden authentication with password recovery and two-factor authentication.
 
-- [ ] `password_resets` table: id, user_id, token, expires_at, used
-- [ ] `mfa_recovery` table: id, user_id, code_hash, used
-- [ ] Admin-initiated password reset (generate reset token)
-- [ ] Self-service password reset via email (SMTP configuration)
-- [ ] TOTP-based MFA (`lib/mfa/`) -- enroll, verify, recovery codes
-- [ ] MFA login flow: password -> TOTP code prompt -> session
-- [ ] "Remember this device" cookie (30 days)
-- [ ] Admin can disable MFA for a user (account recovery)
-- [ ] GUI: MFA enrollment (QR code, confirm code, show recovery codes)
-- [ ] GUI: password change form, reset token entry
-- [ ] Docker: add `ST_SMTP_*` env vars
+- [x] `password_resets` table: id, user_id, token, expires_at, used
+- [x] `mfa_recovery` table: id, user_id, code_hash, used
+- [x] Admin-initiated password reset (generate reset token)
+- [x] Self-service password reset via email (SMTP configuration)
+- [x] TOTP-based MFA (`lib/mfa/`) -- enroll, verify, recovery codes
+- [x] MFA login flow: password -> TOTP code prompt -> session
+- [x] "Remember this device" cookie (30 days)
+- [x] Admin can disable MFA for a user (account recovery)
+- [x] GUI: MFA enrollment (QR code, confirm code, show recovery codes)
+- [x] GUI: password change form, reset token entry
+- [x] Docker: add `ST_SMTP_*` env vars
 
 ---
 
