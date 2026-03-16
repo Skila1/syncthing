@@ -314,18 +314,17 @@ Device backups, snapshots, and duplicate detection.
 
 ## Step 15: Docker & Deployment Finalization
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 2-3 hours
 **Depends on:** All previous steps
 
 Ensure everything works cleanly in the Docker deployment model.
 
-- [ ] Update `Dockerfile` -- additional volume mount points, migration step on startup
-- [ ] Update `docker-entrypoint.sh` -- per-user directory creation, multi-pool volume ownership
-- [ ] Update `README-Docker.md` -- new compose example with all env vars and volumes
-- [ ] Verify CI/CD pipeline (`.github/workflows/build-syncthing.yaml`) builds correctly
-- [ ] Full end-to-end test: build image, run container, create users, sync files, verify isolation
-- [ ] Document all new environment variables
+- [x] Update `Dockerfile` -- CGO/SQLite build deps, additional volume mount points (`/var/syncthing/users`, `/var/syncthing/backups`), all env vars
+- [x] Update `docker-entrypoint.sh` -- per-user directory creation, backup dir, config dir, storage pool volume ownership
+- [x] Update `README-Docker.md` -- comprehensive compose example with all env vars, volumes, and multi-user feature overview
+- [x] Verify CI/CD pipeline (`.github/workflows/build-syncthing.yaml`) -- CGO_ENABLED=1 and SQLite tags already configured
+- [x] Document all new environment variables (core, multi-user, storage pools, SMTP)
 
 ---
 

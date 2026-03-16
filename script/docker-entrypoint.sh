@@ -16,10 +16,29 @@ if [ "$(id -u)" = '0' ]; then
     setcap "$PCAP" "$binary"
   fi
 
-  # Create per-user data directory if configured
+  # Create per-user data directory
   if [ -n "${ST_USER_DATA_DIR:-}" ]; then
     mkdir -p "$ST_USER_DATA_DIR"
     chown "${PUID}:${PGID}" "$ST_USER_DATA_DIR" || true
+  fi
+
+  # Create backups directory
+  mkdir -p /var/syncthing/backups
+  chown "${PUID}:${PGID}" /var/syncthing/backups || true
+
+  # Create config directory for SQLite DB and Syncthing config
+  mkdir -p "${STHOMEDIR:-/var/syncthing/config}"
+  chown "${PUID}:${PGID}" "${STHOMEDIR:-/var/syncthing/config}" || true
+
+  # Ensure storage pool paths exist and have correct ownership
+  if [ -n "${ST_STORAGE_POOLS:-}" ]; then
+    echo "$ST_STORAGE_POOLS" | tr ',' '\n' | while read -r entry; do
+      pool_path="${entry#*=}"
+      if [ -n "$pool_path" ]; then
+        mkdir -p "$pool_path"
+        chown "${PUID}:${PGID}" "$pool_path" || true
+      fi
+    done
   fi
 
   # Chown may fail, which may cause us to be unable to start; but maybe

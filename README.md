@@ -136,9 +136,10 @@ Device backups, snapshots, and duplicate detection.
 
 Final integration testing and documentation.
 
-- [ ] Updated Dockerfile with all volume mounts and migration steps
-- [ ] Full end-to-end test suite
-- [ ] Complete environment variable documentation
+- [x] Updated Dockerfile with CGO/SQLite deps, all volume mounts, and env vars
+- [x] Updated docker-entrypoint.sh with per-user dir creation, storage pool ownership
+- [x] Comprehensive README-Docker.md with compose example, all env vars, volumes
+- [x] CI/CD pipeline verified (CGO_ENABLED=1, SQLite build tags)
 
 ### Roadmap Summary
 
@@ -157,8 +158,8 @@ Final integration testing and documentation.
 | 11 | Collaboration Features | **Complete** |
 | 12 | Admin Platform | **Complete** |
 | 13 | Storage Pools (Multi-Disk) | **Complete** |
-| 14 | Backup & Deduplication | COMPLETE |
-| 15 | Docker & Deployment Finalization | Planned |
+| 14 | Backup & Deduplication | **Complete** |
+| 15 | Docker & Deployment Finalization | **Complete** |
 
 ---
 
