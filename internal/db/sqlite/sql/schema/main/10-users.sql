@@ -59,3 +59,31 @@ CREATE TABLE IF NOT EXISTS mfa_recovery (
 ;
 CREATE INDEX IF NOT EXISTS mfa_recovery_user_id ON mfa_recovery (user_id)
 ;
+
+CREATE TABLE IF NOT EXISTS folder_permissions (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    folder_id TEXT NOT NULL COLLATE BINARY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission TEXT NOT NULL DEFAULT 'read' COLLATE BINARY, -- 'owner', 'readwrite', 'read'
+    created_at INTEGER NOT NULL, -- unix nanos
+    UNIQUE(folder_id, user_id)
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS folder_permissions_folder ON folder_permissions (folder_id)
+;
+CREATE INDEX IF NOT EXISTS folder_permissions_user ON folder_permissions (user_id)
+;
+
+CREATE TABLE IF NOT EXISTS device_ownership (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    device_id TEXT NOT NULL COLLATE BINARY, -- protocol.DeviceID.String()
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    approved INTEGER NOT NULL DEFAULT 0, -- 0=pending, 1=approved
+    created_at INTEGER NOT NULL, -- unix nanos
+    UNIQUE(device_id)
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS device_ownership_user ON device_ownership (user_id)
+;
+CREATE INDEX IF NOT EXISTS device_ownership_device ON device_ownership (device_id)
+;

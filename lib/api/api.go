@@ -57,6 +57,7 @@ import (
 	"github.com/syncthing/syncthing/lib/svcutil"
 	"github.com/syncthing/syncthing/lib/tlsutil"
 	"github.com/syncthing/syncthing/lib/upgrade"
+	"github.com/syncthing/syncthing/lib/permissions"
 	"github.com/syncthing/syncthing/lib/ur"
 	"github.com/syncthing/syncthing/lib/users"
 )
@@ -86,6 +87,7 @@ type service struct {
 	fss                  model.FolderSummaryService
 	urService            *ur.Service
 	userManager          *users.Manager
+	permManager          *permissions.Manager
 	noUpgrade            bool
 	tlsDefaultCommonName string
 	configChanged        chan struct{} // signals intentional listener close due to config change
@@ -109,7 +111,7 @@ type Service interface {
 	WaitForStart() error
 }
 
-func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager) Service {
+func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager, permManager *permissions.Manager) Service {
 	return &service{
 		id:      id,
 		cfg:     cfg,
@@ -125,6 +127,7 @@ func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonNam
 		fss:                  fss,
 		urService:            urService,
 		userManager:          userManager,
+		permManager:          permManager,
 		guiErrors:            errors,
 		systemLog:            systemLog,
 		noUpgrade:            noUpgrade,
@@ -390,6 +393,9 @@ func (s *service) Serve(ctx context.Context) error {
 		restMux.Handler(http.MethodPost, "/rest/noauth/auth/logout", http.HandlerFunc(muAuthMW.handleLogout))
 
 		s.registerUserEndpoints(restMux)
+		if s.permManager != nil {
+			s.registerPermissionEndpoints(restMux)
+		}
 	} else if guiCfg.IsAuthEnabled() {
 		tokenCookieManager := newTokenCookieManager(s.id.Short().String(), guiCfg, s.evLogger, s.miscDB)
 		authMW := newBasicAuthAndSessionMiddleware(tokenCookieManager, guiCfg, s.cfg.LDAP(), handler, s.evLogger)

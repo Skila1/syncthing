@@ -78,20 +78,20 @@ Harden authentication with password recovery and two-factor authentication.
 
 ## Step 4: Access Control & Folder Permissions
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 4-5 hours
 **Depends on:** Step 1
 
 Per-folder permission system: private, shared with specific users, read-only.
 
-- [ ] `folder_permissions` table: folder_id, user_id, permission (private/read/readwrite)
-- [ ] `device_ownership` table: device_id, user_id, approved, created_at
-- [ ] Permission enforcement at API layer -- check access before any folder operation
-- [ ] Permission enforcement at sync engine layer -- block unauthorized writes
-- [ ] Device ownership -- link each device to a user, approval workflow for new devices
-- [ ] GUI: folder permissions dialog (share with users, set access level)
-- [ ] GUI: device ownership display in device edit modal
-- [ ] API endpoints: `GET/PUT /rest/folders/:id/permissions`
+- [x] `folder_permissions` table: folder_id, user_id, permission (private/read/readwrite)
+- [x] `device_ownership` table: device_id, user_id, approved, created_at
+- [x] Permission enforcement at API layer -- check access before any folder operation
+- [x] Permission enforcement at sync engine layer -- block unauthorized writes
+- [x] Device ownership -- link each device to a user, approval workflow for new devices
+- [x] GUI: folder permissions dialog (share with users, set access level)
+- [x] GUI: device ownership display in device edit modal
+- [x] API endpoints: `GET/PUT /rest/folders/:id/permissions`
 
 ---
 

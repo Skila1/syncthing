@@ -742,6 +742,9 @@
                     <button type="button" class="btn btn-sm btn-default" ng-click="editFolderExisting(folder)">
                       <span class="fas fa-pencil-alt"></span>&nbsp;<span translate>Edit</span>
                     </button>
+                    <button type="button" class="btn btn-sm btn-default" ng-click="showFolderPermissions(folder)" ng-if="isAdmin()">
+                      <span class="fas fa-shield"></span>&nbsp;<span translate>Permissions</span>
+                    </button>
                   </span>
                   <div class="clearfix"></div>
                 </div>
@@ -901,6 +904,18 @@
                       <tr class="visible-xs">
                         <th><span class="fa fa-fw {{deviceStatusIcon(deviceCfg)}}"></span>&nbsp;<span translate>Device Status</span></th>
                         <td class="text-right">{{deviceStatusText(deviceCfg)}}</td>
+                      </tr>
+                      <tr ng-if="currentUser && getDeviceOwner(deviceCfg.deviceID)">
+                        <th><span class="fa fa-fw fa-user"></span>&nbsp;<span translate>Owner</span></th>
+                        <td class="text-right">{{getDeviceOwner(deviceCfg.deviceID).username}}</td>
+                      </tr>
+                      <tr ng-if="currentUser && !getDeviceOwner(deviceCfg.deviceID)">
+                        <th><span class="fa fa-fw fa-user"></span>&nbsp;<span translate>Owner</span></th>
+                        <td class="text-right">
+                          <button class="btn btn-xs btn-default" ng-click="claimDevice(deviceCfg.deviceID)">
+                            <span class="fa fa-link"></span>&nbsp;<span translate>Claim</span>
+                          </button>
+                        </td>
                       </tr>
                       <tr ng-if="!connections[deviceCfg.deviceID].connected">
                         <th><span class="fas fa-fw fa-eye"></span>&nbsp;<span translate>Last seen</span></th>
@@ -1139,6 +1154,7 @@
   <ng-include src="'syncthing/device/shareDeviceIdDialogView.html'"></ng-include>
   <ng-include ng-if="isAdmin()" src="'syncthing/admin/userManagementModalView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/mfaEnrollModalView.html'"></ng-include>
+  <ng-include ng-if="isAdmin()" src="'syncthing/folder/folderPermissionsModalView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>

@@ -87,6 +87,9 @@ angular.module('syncthing.core')
             $http.get(urlbase + '/storage/usage').success(function (data) {
                 $scope.storageStatus = data;
             });
+            $http.get(urlbase + '/devices/ownership').success(function (data) {
+                $scope.deviceOwnership = data || [];
+            });
         }
 
         $scope.login = {
@@ -908,6 +911,83 @@ angular.module('syncthing.core')
                 $scope.userManagement.resetUsername = user.username;
                 $('#resetTokenModal').modal('show');
             }).error($scope.emitHTTPError);
+        };
+
+        // --- Folder Permissions ---
+        $scope.folderPerms = {
+            folderId: '',
+            folderLabel: '',
+            list: [],
+            newUserId: null,
+            newPermission: 'read',
+        };
+
+        $scope.showFolderPermissions = function (folder) {
+            $scope.folderPerms.folderId = folder.id;
+            $scope.folderPerms.folderLabel = folder.label || folder.id;
+            $scope.folderPerms.newUserId = null;
+            $scope.folderPerms.newPermission = 'read';
+            $scope.refreshFolderPermissions();
+            if ($scope.isAdmin()) {
+                $scope.refreshUsers();
+            }
+            $('#folderPermissions').modal('show');
+        };
+
+        $scope.refreshFolderPermissions = function () {
+            $http.get(urlbase + '/folders/' + encodeURIComponent($scope.folderPerms.folderId) + '/permissions').success(function (data) {
+                $scope.folderPerms.list = data || [];
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.addFolderPermission = function () {
+            $http.put(urlbase + '/folders/' + encodeURIComponent($scope.folderPerms.folderId) + '/permissions', {
+                userId: $scope.folderPerms.newUserId,
+                permission: $scope.folderPerms.newPermission,
+            }).success(function () {
+                $scope.folderPerms.newUserId = null;
+                $scope.refreshFolderPermissions();
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.removeFolderPermission = function (perm) {
+            if (confirm('Remove access for "' + perm.username + '"?')) {
+                $http.delete(urlbase + '/folders/' + encodeURIComponent($scope.folderPerms.folderId) + '/permissions/' + perm.userId).success(function () {
+                    $scope.refreshFolderPermissions();
+                }).error($scope.emitHTTPError);
+            }
+        };
+
+        // --- Device Ownership ---
+        $scope.deviceOwnership = [];
+
+        $scope.refreshDeviceOwnership = function () {
+            $http.get(urlbase + '/devices/ownership').success(function (data) {
+                $scope.deviceOwnership = data || [];
+            });
+        };
+
+        $scope.claimDevice = function (deviceId) {
+            $http.post(urlbase + '/devices/' + deviceId + '/claim').success(function () {
+                $scope.refreshDeviceOwnership();
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.releaseDevice = function (deviceId) {
+            if (confirm('Release ownership of this device?')) {
+                $http.delete(urlbase + '/devices/' + deviceId + '/ownership').success(function () {
+                    $scope.refreshDeviceOwnership();
+                }).error($scope.emitHTTPError);
+            }
+        };
+
+        $scope.getDeviceOwner = function (deviceId) {
+            for (var i = 0; i < $scope.deviceOwnership.length; i++) {
+                if ($scope.deviceOwnership[i].deviceId === deviceId) {
+                    return $scope.deviceOwnership[i];
+                }
+            }
+            return null;
         };
 
         function refreshNoAuthWarning() {

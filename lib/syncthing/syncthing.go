@@ -42,6 +42,7 @@ import (
 	"github.com/syncthing/syncthing/lib/tlsutil"
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/ur"
+	"github.com/syncthing/syncthing/lib/permissions"
 	"github.com/syncthing/syncthing/lib/users"
 )
 
@@ -69,6 +70,7 @@ type App struct {
 	sdb               db.DB
 	sqlDB             *sqlite.DB
 	userManager       *users.Manager
+	permManager       *permissions.Manager
 	evLogger          events.Logger
 	cert              tls.Certificate
 	opts              Options
@@ -92,6 +94,9 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 	userStore := sqlite.NewUserStore(sqlDB)
 	userMgr := users.NewManager(userStore, userDataDir)
 
+	permStore := sqlite.NewPermissionStore(sqlDB)
+	permMgr := permissions.NewManager(permStore)
+
 	adminUser := os.Getenv("ST_ADMIN_USER")
 	if adminUser == "" {
 		adminUser = "admin"
@@ -112,6 +117,7 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 		sdb:         sdb,
 		sqlDB:       sqlDB,
 		userManager: userMgr,
+		permManager: permMgr,
 		evLogger:    evLogger,
 		opts:        opts,
 		cert:        cert,
@@ -445,7 +451,7 @@ func (a *App) setupGUI(m model.Model, defaultSub, diskSub events.BufferedSubscri
 	summaryService := model.NewFolderSummaryService(a.cfg, m, a.myID, a.evLogger)
 	a.mainService.Add(summaryService)
 
-	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager)
+	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager)
 	a.mainService.Add(apiSvc)
 
 	if err := apiSvc.WaitForStart(); err != nil {

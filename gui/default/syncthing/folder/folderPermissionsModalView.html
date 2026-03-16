@@ -1,0 +1,80 @@
+<div id="folderPermissions" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fa fa-shield"></span>&nbsp;
+          <span translate>Folder Permissions</span>
+          <small ng-if="folderPerms.folderLabel">— {{folderPerms.folderLabel}}</small>
+        </h4>
+      </div>
+      <div class="modal-body">
+
+        <!-- Add Permission Form -->
+        <div class="panel panel-default" ng-if="isAdmin()">
+          <div class="panel-heading">
+            <h5 class="panel-title"><span class="fa fa-user-plus"></span>&nbsp;<span translate>Share with User</span></h5>
+          </div>
+          <div class="panel-body">
+            <form class="form-inline" ng-submit="addFolderPermission()">
+              <div class="form-group" style="margin-right: 10px;">
+                <select class="form-control" ng-model="folderPerms.newUserId"
+                        ng-options="u.id as u.username for u in managedUsers">
+                  <option value="" translate>Select user...</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-right: 10px;">
+                <select class="form-control" ng-model="folderPerms.newPermission">
+                  <option value="read" translate>Read Only</option>
+                  <option value="readwrite" translate>Read & Write</option>
+                  <option value="owner" translate>Owner</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary" ng-disabled="!folderPerms.newUserId">
+                <span class="fa fa-plus"></span>&nbsp;<span translate>Add</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Current Permissions List -->
+        <table class="table table-striped table-hover">
+          <thead>
+            <tr>
+              <th translate>User</th>
+              <th translate>Permission</th>
+              <th translate>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="perm in folderPerms.list track by perm.id">
+              <td>
+                <span class="fa fa-user"></span>&nbsp;{{perm.username}}
+                <span ng-if="perm.userId === currentUser.id" class="label label-info" style="font-size: 9px;">YOU</span>
+              </td>
+              <td>
+                <span ng-if="perm.permission === 'owner'" class="label label-primary" translate>Owner</span>
+                <span ng-if="perm.permission === 'readwrite'" class="label label-success" translate>Read & Write</span>
+                <span ng-if="perm.permission === 'read'" class="label label-default" translate>Read Only</span>
+              </td>
+              <td>
+                <button class="btn btn-xs btn-danger" ng-click="removeFolderPermission(perm)"
+                        ng-if="isAdmin() && perm.userId !== currentUser.id" title="Remove">
+                  <span class="fa fa-trash"></span>
+                </button>
+              </td>
+            </tr>
+            <tr ng-if="!folderPerms.list || folderPerms.list.length === 0">
+              <td colspan="3" class="text-center text-muted" translate>No permissions set</td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
