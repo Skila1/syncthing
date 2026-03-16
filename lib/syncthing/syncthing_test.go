@@ -79,7 +79,7 @@ func TestStartupFail(t *testing.T) {
 	t.Cleanup(func() {
 		sdb.Close()
 	})
-	app, err := New(cfg, sdb, events.NoopLogger, cert, Options{})
+	app, err := New(cfg, sdb, sdb, events.NoopLogger, cert, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -90,7 +90,7 @@ func TestStopAfterBrokenConfig(t *testing.T) {
 		mdb.Close()
 	})
 	kdb := db.NewMiscDB(mdb)
-	srv := New(protocol.LocalDeviceID, w, "", "syncthing", nil, nil, nil, events.NoopLogger, nil, nil, nil, nil, nil, nil, false, kdb).(*service)
+	srv := New(protocol.LocalDeviceID, w, "", "syncthing", nil, nil, nil, events.NoopLogger, nil, nil, nil, nil, nil, nil, false, kdb, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil).(*service)
 
 	srv.started = make(chan string)
 

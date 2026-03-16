@@ -32,9 +32,9 @@ jobs:
           CGO_ENABLED: "1"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
+          version: v2.11.3
           args: --build-tags "sqlite_omit_load_extension sqlite_dbstat"
         env:
           CGO_ENABLED: "1"
