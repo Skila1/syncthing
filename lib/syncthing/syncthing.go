@@ -43,6 +43,7 @@ import (
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/ur"
 	"github.com/syncthing/syncthing/lib/permissions"
+	"github.com/syncthing/syncthing/lib/sharing"
 	"github.com/syncthing/syncthing/lib/users"
 )
 
@@ -71,6 +72,7 @@ type App struct {
 	sqlDB             *sqlite.DB
 	userManager       *users.Manager
 	permManager       *permissions.Manager
+	shareManager      *sharing.Manager
 	evLogger          events.Logger
 	cert              tls.Certificate
 	opts              Options
@@ -97,6 +99,9 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 	permStore := sqlite.NewPermissionStore(sqlDB)
 	permMgr := permissions.NewManager(permStore)
 
+	shareStore := sqlite.NewShareStore(sqlDB)
+	shareMgr := sharing.NewManager(shareStore)
+
 	adminUser := os.Getenv("ST_ADMIN_USER")
 	if adminUser == "" {
 		adminUser = "admin"
@@ -116,8 +121,9 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 		cfg:         cfg,
 		sdb:         sdb,
 		sqlDB:       sqlDB,
-		userManager: userMgr,
-		permManager: permMgr,
+		userManager:  userMgr,
+		permManager:  permMgr,
+		shareManager: shareMgr,
 		evLogger:    evLogger,
 		opts:        opts,
 		cert:        cert,
@@ -451,7 +457,7 @@ func (a *App) setupGUI(m model.Model, defaultSub, diskSub events.BufferedSubscri
 	summaryService := model.NewFolderSummaryService(a.cfg, m, a.myID, a.evLogger)
 	a.mainService.Add(summaryService)
 
-	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager)
+	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager)
 	a.mainService.Add(apiSvc)
 
 	if err := apiSvc.WaitForStart(); err != nil {

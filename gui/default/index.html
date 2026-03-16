@@ -123,6 +123,7 @@
               <li ng-if="isAdmin()"><a href="" ng-click="advanced()"><span class="fa fa-fw fa-cogs"></span>&nbsp;<span translate>Advanced</span></a></li>
               <li ng-if="isAdmin()" class="divider" aria-hidden="true"></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showUserManagement()"><span class="fa fa-fw fa-users"></span>&nbsp;<span translate>User Management</span></a></li>
+              <li ng-if="isAdmin()"><a href="" ng-click="showAdminShareLinks()"><span class="fa fa-fw fa-link"></span>&nbsp;<span translate>Share Links</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="startMFAEnroll()" ng-if="!currentUser.mfaEnabled"><span class="fa fa-fw fa-lock"></span>&nbsp;<span translate>Enable Two-Factor Auth</span></a></li>
               <li ng-if="currentUser && currentUser.mfaEnabled"><a href="" ng-click="disableMFA()"><span class="fa fa-fw fa-unlock"></span>&nbsp;<span translate>Disable Two-Factor Auth</span></a></li>
               <li class="divider" aria-hidden="true"></li>
@@ -745,6 +746,9 @@
                     <button type="button" class="btn btn-sm btn-default" ng-click="showFolderPermissions(folder)" ng-if="isAdmin()">
                       <span class="fas fa-shield"></span>&nbsp;<span translate>Permissions</span>
                     </button>
+                    <button type="button" class="btn btn-sm btn-default" ng-click="showShareDialog(folder)" ng-if="currentUser">
+                      <span class="fas fa-link"></span>&nbsp;<span translate>Share</span>
+                    </button>
                   </span>
                   <div class="clearfix"></div>
                 </div>
@@ -1155,6 +1159,8 @@
   <ng-include ng-if="isAdmin()" src="'syncthing/admin/userManagementModalView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/mfaEnrollModalView.html'"></ng-include>
   <ng-include ng-if="isAdmin()" src="'syncthing/folder/folderPermissionsModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/shareLinkModalView.html'"></ng-include>
+  <ng-include ng-if="isAdmin()" src="'syncthing/admin/shareLinksManagementView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>

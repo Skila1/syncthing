@@ -1,0 +1,113 @@
+<div id="shareLinkModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-link"></span>
+          <span translate>Share Link</span> &mdash; {{shareLink.folderLabel}}
+        </h4>
+      </div>
+      <div class="modal-body">
+        <!-- Generated link display -->
+        <div ng-if="shareLink.generatedLink" class="panel panel-success">
+          <div class="panel-heading">
+            <span class="fas fa-check-circle"></span> <span translate>Link Generated</span>
+          </div>
+          <div class="panel-body">
+            <div class="input-group">
+              <input type="text" class="form-control" readonly ng-model="shareLink.generatedLink" id="shareLinkUrl" />
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button" ng-click="copyShareLink()">
+                  <span class="fas fa-copy"></span> <span translate>Copy</span>
+                </button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create form -->
+        <form ng-if="!shareLink.generatedLink">
+          <div class="form-group">
+            <label translate>File Path</label>
+            <input type="text" class="form-control" ng-model="shareLink.filePath" placeholder="Leave empty to share entire folder" />
+            <p class="help-block" translate>Relative path within the folder. Leave empty to share the entire folder.</p>
+          </div>
+
+          <div class="form-group">
+            <label translate>Expiry</label>
+            <select class="form-control" ng-model="shareLink.expiryHours">
+              <option value="1">1 hour</option>
+              <option value="24">1 day</option>
+              <option value="168">7 days</option>
+              <option value="720">30 days</option>
+              <option value="2160">90 days</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label translate>Max Downloads</label>
+            <input type="number" class="form-control" ng-model="shareLink.maxDownloads" min="0" placeholder="0 = unlimited" />
+            <p class="help-block" translate>0 means unlimited downloads.</p>
+          </div>
+
+          <div class="form-group">
+            <label translate>Password (optional)</label>
+            <input type="password" class="form-control" ng-model="shareLink.password" placeholder="Leave empty for no password" />
+          </div>
+        </form>
+
+        <!-- Existing share links for this folder -->
+        <hr ng-if="shareLink.existing.length > 0" />
+        <div ng-if="shareLink.existing.length > 0">
+          <h5 translate>Existing Share Links</h5>
+          <table class="table table-condensed table-striped">
+            <thead>
+              <tr>
+                <th translate>File</th>
+                <th translate>Expires</th>
+                <th translate>Downloads</th>
+                <th translate>Password</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat="link in shareLink.existing">
+                <td>{{link.filePath || '(entire folder)'}}</td>
+                <td>
+                  <span ng-if="link.expiresAt > 0">{{link.expiresAt / 1000000 | date:'short'}}</span>
+                  <span ng-if="link.expiresAt == 0" translate>Never</span>
+                </td>
+                <td>
+                  {{link.downloadCount}}
+                  <span ng-if="link.maxDownloads > 0"> / {{link.maxDownloads}}</span>
+                  <span ng-if="link.maxDownloads == 0"> / &infin;</span>
+                </td>
+                <td>
+                  <span ng-if="link.hasPassword" class="fas fa-lock text-warning"></span>
+                  <span ng-if="!link.hasPassword" class="fas fa-lock-open text-muted"></span>
+                </td>
+                <td>
+                  <button class="btn btn-xs btn-default" ng-click="copyExistingLink(link)">
+                    <span class="fas fa-copy"></span>
+                  </button>
+                  <button class="btn btn-xs btn-danger" ng-click="revokeShareLink(link)">
+                    <span class="fas fa-trash"></span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+        <button type="button" class="btn btn-primary" ng-click="createShareLink()" ng-if="!shareLink.generatedLink" ng-disabled="shareLink.creating">
+          <span ng-if="shareLink.creating" class="fas fa-spinner fa-spin"></span>
+          <span translate>Generate Link</span>
+        </button>
+        <button type="button" class="btn btn-primary" ng-click="shareLink.generatedLink = null" ng-if="shareLink.generatedLink" translate>Create Another</button>
+      </div>
+    </div>
+  </div>
+</div>

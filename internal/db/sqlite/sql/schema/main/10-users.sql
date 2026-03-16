@@ -87,3 +87,21 @@ CREATE INDEX IF NOT EXISTS device_ownership_user ON device_ownership (user_id)
 ;
 CREATE INDEX IF NOT EXISTS device_ownership_device ON device_ownership (device_id)
 ;
+
+CREATE TABLE IF NOT EXISTS share_links (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    token TEXT NOT NULL UNIQUE COLLATE BINARY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    folder_id TEXT NOT NULL COLLATE BINARY,
+    file_path TEXT NOT NULL COLLATE BINARY, -- relative path within folder, empty = whole folder
+    expires_at INTEGER NOT NULL, -- unix nanos, 0 = never
+    max_downloads INTEGER NOT NULL DEFAULT 0, -- 0 = unlimited
+    download_count INTEGER NOT NULL DEFAULT 0,
+    password_hash TEXT NOT NULL DEFAULT '' COLLATE BINARY, -- empty = no password
+    created_at INTEGER NOT NULL -- unix nanos
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS share_links_token ON share_links (token)
+;
+CREATE INDEX IF NOT EXISTS share_links_user ON share_links (user_id)
+;

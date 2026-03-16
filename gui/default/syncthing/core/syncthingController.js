@@ -990,6 +990,110 @@ angular.module('syncthing.core')
             return null;
         };
 
+        // --- Share Links ---
+
+        $scope.shareLink = {
+            folderId: '',
+            folderLabel: '',
+            filePath: '',
+            expiryHours: '168',
+            maxDownloads: 0,
+            password: '',
+            generatedLink: null,
+            creating: false,
+            existing: []
+        };
+
+        $scope.adminShares = {
+            list: [],
+            loading: false
+        };
+
+        $scope.showShareDialog = function (folder) {
+            $scope.shareLink.folderId = folder.id;
+            $scope.shareLink.folderLabel = folder.label || folder.id;
+            $scope.shareLink.filePath = '';
+            $scope.shareLink.expiryHours = '168';
+            $scope.shareLink.maxDownloads = 0;
+            $scope.shareLink.password = '';
+            $scope.shareLink.generatedLink = null;
+            $scope.shareLink.creating = false;
+            $scope.refreshShareLinks();
+            $('#shareLinkModal').modal('show');
+        };
+
+        $scope.refreshShareLinks = function () {
+            $http.get(urlbase + '/shares').success(function (data) {
+                $scope.shareLink.existing = (data || []).filter(function (l) {
+                    return l.folderId === $scope.shareLink.folderId;
+                });
+            });
+        };
+
+        $scope.createShareLink = function () {
+            $scope.shareLink.creating = true;
+            $http.post(urlbase + '/shares', {
+                folderId: $scope.shareLink.folderId,
+                filePath: $scope.shareLink.filePath,
+                password: $scope.shareLink.password,
+                expiryHours: parseInt($scope.shareLink.expiryHours, 10),
+                maxDownloads: $scope.shareLink.maxDownloads || 0
+            }).success(function (data) {
+                var base = location.protocol + '//' + location.host + urlbase;
+                $scope.shareLink.generatedLink = base + '/noauth/share/' + data.token;
+                $scope.shareLink.creating = false;
+                $scope.refreshShareLinks();
+            }).error(function () {
+                $scope.shareLink.creating = false;
+            });
+        };
+
+        $scope.copyShareLink = function () {
+            var el = document.getElementById('shareLinkUrl');
+            if (el) {
+                el.select();
+                document.execCommand('copy');
+            }
+        };
+
+        $scope.copyExistingLink = function (link) {
+            var base = location.protocol + '//' + location.host + urlbase;
+            var url = base + '/noauth/share/' + link.token;
+            var temp = document.createElement('input');
+            document.body.appendChild(temp);
+            temp.value = url;
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+        };
+
+        $scope.revokeShareLink = function (link) {
+            $http.delete(urlbase + '/shares/' + link.id).success(function () {
+                $scope.refreshShareLinks();
+            });
+        };
+
+        $scope.showAdminShareLinks = function () {
+            $scope.refreshAdminShareLinks();
+            $('#adminShareLinksModal').modal('show');
+        };
+
+        $scope.refreshAdminShareLinks = function () {
+            $scope.adminShares.loading = true;
+            $http.get(urlbase + '/admin/shares').success(function (data) {
+                $scope.adminShares.list = data || [];
+                $scope.adminShares.loading = false;
+            }).error(function () {
+                $scope.adminShares.loading = false;
+            });
+        };
+
+        $scope.adminRevokeShareLink = function (link) {
+            $http.delete(urlbase + '/admin/shares/' + link.id).success(function () {
+                $scope.refreshAdminShareLinks();
+            });
+        };
+
         function refreshNoAuthWarning() {
             if (!$scope.system || !$scope.config || !$scope.config.gui) {
                 // We need all to be able to determine the state.

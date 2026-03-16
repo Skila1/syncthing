@@ -97,18 +97,18 @@ Per-folder permission system: private, shared with specific users, read-only.
 
 ## Step 5: Share Links
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 2-3 hours
 **Depends on:** Step 4
 
 Temporary download links for files and folders.
 
-- [ ] `share_links` table: id, token, user_id, folder_id, file_path, expires_at, max_downloads, download_count, password_hash
-- [ ] Share link generation (`lib/sharing/`) -- token creation, expiry, optional password
-- [ ] Public download endpoint: `GET /rest/noauth/share/:token` (no auth required)
-- [ ] Admin can view and revoke all active share links
-- [ ] GUI: share link dialog (generate link, set expiry/password/download limit, copy link)
-- [ ] GUI: admin share link management view
+- [x] `share_links` table: id, token, user_id, folder_id, file_path, expires_at, max_downloads, download_count, password_hash
+- [x] Share link generation (`lib/sharing/`) -- token creation, expiry, optional password
+- [x] Public download endpoint: `GET /rest/noauth/share/:token` (no auth required)
+- [x] Admin can view and revoke all active share links
+- [x] GUI: share link dialog (generate link, set expiry/password/download limit, copy link)
+- [x] GUI: admin share link management view
 
 ---
 
