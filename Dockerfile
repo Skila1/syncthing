@@ -7,17 +7,18 @@ ARG GOVERSION=latest
 # exists (pre-built) otherwise we build it.
 #
 
-FROM golang:$GOVERSION AS builder
+FROM golang:$GOVERSION-alpine AS builder
 ARG BUILD_USER
 ARG BUILD_HOST
 ARG TARGETARCH
+
+RUN apk add --no-cache gcc musl-dev sqlite-dev build-base
 
 WORKDIR /src
 COPY . .
 
 ENV CGO_ENABLED=1
-RUN apk add --no-cache gcc musl-dev sqlite-dev && \
-  if [ ! -f syncthing-linux-$TARGETARCH ] ; then \
+RUN if [ ! -f syncthing-linux-$TARGETARCH ] ; then \
     go run build.go -no-upgrade build syncthing ; \
     mv syncthing syncthing-linux-$TARGETARCH ; \
   fi
