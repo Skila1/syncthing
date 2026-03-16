@@ -37,49 +37,49 @@ Admin-controlled storage quotas per user with real-time usage tracking.
 
 Password recovery and TOTP-based two-factor authentication.
 
-- [ ] Admin-initiated and self-service password reset
-- [ ] TOTP MFA enrollment, verification, and recovery codes
-- [ ] "Remember this device" support
+- [x] Admin-initiated and self-service password reset
+- [x] TOTP MFA enrollment, verification, and recovery codes
+- [x] "Remember this device" support
 
 ### Step 4: Access Control & Folder Permissions
 
 Per-folder permissions: private, shared with specific users, read-only.
 
-- [ ] Folder permission system (private / read / read-write per user)
-- [ ] Device ownership linked to users
-- [ ] Permission enforcement at API and sync engine layers
+- [x] Folder permission system (private / read / read-write per user)
+- [x] Device ownership linked to users
+- [x] Permission enforcement at API and sync engine layers
 
 ### Step 5: Share Links
 
 Temporary, optionally password-protected download links.
 
-- [ ] Expiring share links with download limits
-- [ ] Public download endpoint (no auth)
-- [ ] Admin link management
+- [x] Expiring share links with download limits
+- [x] Public download endpoint (no auth)
+- [x] Admin link management
 
 ### Step 6: File Browser, Uploads & Search
 
 Web-based file management directly in the GUI.
 
-- [ ] Directory browsing, file metadata, previews
-- [ ] Chunked file upload with drag-and-drop
-- [ ] Filename search
+- [x] Directory browsing, file metadata, previews
+- [x] Chunked file upload with drag-and-drop
+- [x] Filename search
 
 ### Step 7: Trash, Version History & Cleanup Policies
 
 Soft deletes, file versioning, and automatic cleanup.
 
-- [ ] Per-user trash folder with configurable retention
-- [ ] File version history with restore
-- [ ] Cleanup policy scheduler
+- [x] Per-user trash folder with configurable retention
+- [x] File version history with restore
+- [x] Cleanup policy scheduler
 
 ### Step 8: Activity Feed & Notifications
 
 User-scoped activity tracking and change alerts.
 
-- [ ] Activity feed (file changes, shares, syncs)
-- [ ] In-app and optional email notifications
-- [ ] Per-folder notification preferences
+- [x] Activity feed (file changes, shares, syncs)
+- [x] In-app and optional email notifications
+- [x] Per-folder notification preferences
 
 ### Step 9: Sync Enhancements
 
