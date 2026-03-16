@@ -1811,6 +1811,115 @@ angular.module('syncthing.core')
             $http.put(urlbase + '/admin/bandwidth-ceiling', $scope.adminDash.bandwidthCeiling);
         };
 
+        // --- Backup Manager ---
+
+        $scope.backupMgr = {
+            tab: 'backups',
+            backups: [],
+            snapshots: [],
+            newFolderID: '',
+            newType: 'full',
+            snapFolderID: '',
+            snapName: ''
+        };
+
+        $scope.showBackupManager = function () {
+            $scope.refreshBackups();
+            $('#backupManager').modal('show');
+        };
+
+        $scope.refreshBackups = function () {
+            $http.get(urlbase + '/backups').success(function (data) {
+                $scope.backupMgr.backups = data;
+            });
+        };
+
+        $scope.createBackup = function () {
+            $http.post(urlbase + '/backups', {
+                folderId: $scope.backupMgr.newFolderID,
+                type: $scope.backupMgr.newType
+            }).success(function () {
+                $scope.refreshBackups();
+            });
+        };
+
+        $scope.restoreBackup = function (b) {
+            $http.post(urlbase + '/backups/' + b.id + '/restore').success(function () {
+                $scope.refreshBackups();
+            });
+        };
+
+        $scope.deleteBackupItem = function (b) {
+            $http.delete(urlbase + '/backups/' + b.id).success(function () {
+                $scope.refreshBackups();
+            });
+        };
+
+        $scope.refreshSnapshots = function () {
+            var url = urlbase + '/snapshots';
+            if ($scope.backupMgr.snapFolderID) {
+                url += '?folder=' + encodeURIComponent($scope.backupMgr.snapFolderID);
+            }
+            $http.get(url).success(function (data) {
+                $scope.backupMgr.snapshots = data;
+            });
+        };
+
+        $scope.createSnapshot = function () {
+            $http.post(urlbase + '/snapshots', {
+                folderId: $scope.backupMgr.snapFolderID,
+                name: $scope.backupMgr.snapName || 'snapshot'
+            }).success(function () {
+                $scope.refreshSnapshots();
+            });
+        };
+
+        $scope.restoreSnapshotItem = function (s) {
+            $http.post(urlbase + '/snapshots/' + s.id + '/restore').success(function () {
+                $scope.refreshSnapshots();
+            });
+        };
+
+        $scope.deleteSnapshotItem = function (s) {
+            $http.delete(urlbase + '/snapshots/' + s.id).success(function () {
+                $scope.refreshSnapshots();
+            });
+        };
+
+        // --- Duplicate Detection ---
+
+        $scope.dupReport = {
+            folderID: '',
+            scanning: false,
+            result: null
+        };
+
+        $scope.showDuplicateReport = function () {
+            $scope.dupReport.result = null;
+            $('#duplicateReport').modal('show');
+        };
+
+        $scope.scanDuplicates = function () {
+            $scope.dupReport.scanning = true;
+            $scope.dupReport.result = null;
+            $http.get(urlbase + '/duplicates?folder=' + encodeURIComponent($scope.dupReport.folderID)).success(function (data) {
+                $scope.dupReport.result = data;
+                $scope.dupReport.scanning = false;
+            }).error(function () {
+                $scope.dupReport.scanning = false;
+            });
+        };
+
+        $scope.resolveDuplicateGroup = function (group, action) {
+            $http.post(urlbase + '/duplicates/resolve', {
+                folderId: $scope.dupReport.folderID,
+                group: group,
+                action: action
+            }).success(function () {
+                $scope.scanDuplicates();
+            });
+        };
+
         // --- Group Management ---
 
         $scope.groupMgmt = {

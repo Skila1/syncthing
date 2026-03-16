@@ -1,0 +1,57 @@
+<div id="duplicateReport" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title"><span class="fa fa-copy"></span>&nbsp;Duplicate Detection</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-inline" style="margin-bottom:15px">
+          <select class="form-control" ng-model="dupReport.folderID" ng-options="f.id as f.label for f in folderList()">
+            <option value="">-- Select Folder --</option>
+          </select>
+          <button class="btn btn-primary" ng-click="scanDuplicates()" ng-disabled="!dupReport.folderID || dupReport.scanning">
+            <span class="fa fa-search"></span> Scan for Duplicates
+          </button>
+          <span ng-show="dupReport.scanning" class="text-muted">&nbsp;Scanning...</span>
+        </form>
+
+        <div ng-if="dupReport.result">
+          <div class="alert alert-info">
+            <strong>{{dupReport.result.filesScanned}}</strong> files scanned.
+            <strong>{{dupReport.result.groups.length}}</strong> duplicate groups found.
+            Potential space savings: <strong>{{dupReport.result.totalWasted | binary}}B</strong>
+          </div>
+
+          <div class="panel panel-default" ng-repeat="g in dupReport.result.groups track by g.hash" style="margin-bottom:10px">
+            <div class="panel-heading">
+              <strong>Hash:</strong> {{g.hash | limitTo:16}}...
+              &mdash; <strong>{{g.files.length}}</strong> copies &mdash;
+              {{g.size | binary}}B each &mdash;
+              Wasted: {{g.wastedBytes | binary}}B
+            </div>
+            <ul class="list-group">
+              <li class="list-group-item" ng-repeat="f in g.files">
+                <span class="fa fa-file-o"></span>&nbsp;{{f}}
+                <span ng-if="$first" class="label label-success pull-right">Keep</span>
+              </li>
+            </ul>
+            <div class="panel-footer">
+              <button class="btn btn-xs btn-warning" ng-click="resolveDuplicateGroup(g, 'hardlink')">
+                <span class="fa fa-link"></span> Replace with Hardlinks
+              </button>
+              <button class="btn btn-xs btn-danger" ng-click="resolveDuplicateGroup(g, 'delete')">
+                <span class="fa fa-trash"></span> Delete Duplicates
+              </button>
+            </div>
+          </div>
+
+          <p ng-if="!dupReport.result.groups.length" class="text-muted text-center">No duplicates found.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

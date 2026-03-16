@@ -45,6 +45,7 @@ import (
 	"github.com/syncthing/syncthing/lib/permissions"
 	"github.com/syncthing/syncthing/lib/email"
 	"github.com/syncthing/syncthing/lib/audit"
+	"github.com/syncthing/syncthing/lib/backup"
 	"github.com/syncthing/syncthing/lib/comments"
 	"github.com/syncthing/syncthing/lib/encryption"
 	"github.com/syncthing/syncthing/lib/groups"
@@ -94,6 +95,7 @@ type App struct {
 	commentStore      comments.Store
 	provisioningStore provisioning.Store
 	storagePoolStore  storage.Store
+	backupStore       backup.Store
 	evLogger          events.Logger
 	cert              tls.Certificate
 	opts              Options
@@ -141,6 +143,7 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 	commentSt := sqlite.NewCommentStore(sqlDB)
 	provSt := sqlite.NewProvisioningStore(sqlDB)
 	poolSt := sqlite.NewStoragePoolStore(sqlDB)
+	backupSt := sqlite.NewBackupStore(sqlDB)
 
 	adminUser := os.Getenv("ST_ADMIN_USER")
 	if adminUser == "" {
@@ -175,6 +178,7 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 		commentStore:       commentSt,
 		provisioningStore: provSt,
 		storagePoolStore:  poolSt,
+		backupStore:       backupSt,
 		evLogger:           evLogger,
 		opts:        opts,
 		cert:        cert,
@@ -508,7 +512,7 @@ func (a *App) setupGUI(m model.Model, defaultSub, diskSub events.BufferedSubscri
 	summaryService := model.NewFolderSummaryService(a.cfg, m, a.myID, a.evLogger)
 	a.mainService.Add(summaryService)
 
-	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager, a.cleanupStore, a.notifManager, a.syncExtStore, a.auditLogger, a.auditStore, a.ipRestrictionStore, a.encryptionStore, a.groupManager, a.commentStore, a.provisioningStore, a.storagePoolStore)
+	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager, a.cleanupStore, a.notifManager, a.syncExtStore, a.auditLogger, a.auditStore, a.ipRestrictionStore, a.encryptionStore, a.groupManager, a.commentStore, a.provisioningStore, a.storagePoolStore, a.backupStore)
 	a.mainService.Add(apiSvc)
 
 	if err := apiSvc.WaitForStart(); err != nil {

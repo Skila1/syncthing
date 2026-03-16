@@ -138,6 +138,8 @@
               <li ng-if="isAdmin()"><a href="" ng-click="showGroupManagement()"><span class="fa fa-fw fa-users"></span>&nbsp;<span translate>Groups</span></a></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showAdminDashboard()"><span class="fa fa-fw fa-tachometer-alt"></span>&nbsp;<span translate>Admin Dashboard</span></a></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showStoragePools()"><span class="fa fa-fw fa-hdd"></span>&nbsp;<span translate>Storage Pools</span></a></li>
+              <li ng-if="currentUser"><a href="" ng-click="showBackupManager()"><span class="fa fa-fw fa-archive"></span>&nbsp;<span translate>Backups &amp; Snapshots</span></a></li>
+              <li ng-if="currentUser"><a href="" ng-click="showDuplicateReport()"><span class="fa fa-fw fa-copy"></span>&nbsp;<span translate>Duplicate Detection</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="startMFAEnroll()" ng-if="!currentUser.mfaEnabled"><span class="fa fa-fw fa-lock"></span>&nbsp;<span translate>Enable Two-Factor Auth</span></a></li>
               <li ng-if="currentUser && currentUser.mfaEnabled"><a href="" ng-click="disableMFA()"><span class="fa fa-fw fa-unlock"></span>&nbsp;<span translate>Disable Two-Factor Auth</span></a></li>
               <li class="divider" aria-hidden="true"></li>
@@ -1196,6 +1198,8 @@
   <ng-include ng-if="currentUser" src="'syncthing/core/commentsModalView.html'"></ng-include>
   <ng-include ng-if="isAdmin()" src="'syncthing/core/adminDashboardModalView.html'"></ng-include>
   <ng-include ng-if="isAdmin()" src="'syncthing/core/storagePoolsModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/backupManagerModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/duplicateReportModalView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>

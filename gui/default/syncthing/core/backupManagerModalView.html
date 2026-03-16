@@ -1,0 +1,90 @@
+<div id="backupManager" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title"><span class="fa fa-archive"></span>&nbsp;Backups &amp; Snapshots</h4>
+      </div>
+      <div class="modal-body">
+        <ul class="nav nav-tabs" style="margin-bottom:15px">
+          <li ng-class="{active: backupMgr.tab==='backups'}"><a href="" ng-click="backupMgr.tab='backups'">Backups</a></li>
+          <li ng-class="{active: backupMgr.tab==='snapshots'}"><a href="" ng-click="backupMgr.tab='snapshots'">Snapshots</a></li>
+        </ul>
+
+        <!-- Backups Tab -->
+        <div ng-show="backupMgr.tab==='backups'">
+          <form class="form-inline" style="margin-bottom:15px">
+            <select class="form-control" ng-model="backupMgr.newFolderID" ng-options="f.id as f.label for f in folderList()">
+              <option value="">-- Select Folder --</option>
+            </select>
+            <select class="form-control" ng-model="backupMgr.newType">
+              <option value="full">Full</option>
+              <option value="incremental">Incremental</option>
+            </select>
+            <button class="btn btn-primary" ng-click="createBackup()" ng-disabled="!backupMgr.newFolderID">
+              <span class="fa fa-plus"></span> Create Backup
+            </button>
+          </form>
+
+          <table class="table table-striped table-condensed">
+            <thead><tr>
+              <th>ID</th><th>Folder</th><th>Type</th><th>Status</th><th>Size</th><th>Created</th><th>Actions</th>
+            </tr></thead>
+            <tbody>
+              <tr ng-repeat="b in backupMgr.backups track by b.id">
+                <td>{{b.id}}</td>
+                <td>{{b.folderId}}</td>
+                <td>{{b.type}}</td>
+                <td><span class="label" ng-class="{'label-success':b.status==='completed','label-warning':b.status==='running','label-danger':b.status==='failed','label-default':b.status==='pending'}">{{b.status}}</span></td>
+                <td>{{b.sizeBytes | binary}}B</td>
+                <td>{{b.createdAt | date:'medium'}}</td>
+                <td>
+                  <button class="btn btn-xs btn-success" ng-click="restoreBackup(b)" ng-disabled="b.status!=='completed'" title="Restore"><span class="fa fa-undo"></span></button>
+                  <button class="btn btn-xs btn-danger" ng-click="deleteBackupItem(b)" title="Delete"><span class="fa fa-trash"></span></button>
+                </td>
+              </tr>
+              <tr ng-if="!backupMgr.backups.length"><td colspan="7" class="text-muted text-center">No backups yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Snapshots Tab -->
+        <div ng-show="backupMgr.tab==='snapshots'">
+          <form class="form-inline" style="margin-bottom:15px">
+            <select class="form-control" ng-model="backupMgr.snapFolderID" ng-options="f.id as f.label for f in folderList()" ng-change="refreshSnapshots()">
+              <option value="">-- Select Folder --</option>
+            </select>
+            <input type="text" class="form-control" ng-model="backupMgr.snapName" placeholder="Snapshot name (optional)">
+            <button class="btn btn-primary" ng-click="createSnapshot()" ng-disabled="!backupMgr.snapFolderID">
+              <span class="fa fa-camera"></span> Create Snapshot
+            </button>
+          </form>
+
+          <table class="table table-striped table-condensed">
+            <thead><tr>
+              <th>ID</th><th>Folder</th><th>Name</th><th>Size</th><th>Created</th><th>Actions</th>
+            </tr></thead>
+            <tbody>
+              <tr ng-repeat="s in backupMgr.snapshots track by s.id">
+                <td>{{s.id}}</td>
+                <td>{{s.folderId}}</td>
+                <td>{{s.name}}</td>
+                <td>{{s.sizeBytes | binary}}B</td>
+                <td>{{s.createdAt | date:'medium'}}</td>
+                <td>
+                  <button class="btn btn-xs btn-success" ng-click="restoreSnapshotItem(s)" title="Restore"><span class="fa fa-undo"></span></button>
+                  <button class="btn btn-xs btn-danger" ng-click="deleteSnapshotItem(s)" title="Delete"><span class="fa fa-trash"></span></button>
+                </td>
+              </tr>
+              <tr ng-if="!backupMgr.snapshots.length"><td colspan="6" class="text-muted text-center">No snapshots yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

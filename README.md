@@ -127,9 +127,10 @@ Multiple disk support for ZFS, RAID, and LVM environments.
 
 Device backups, snapshots, and duplicate detection.
 
-- [ ] Scheduled full/incremental device backups
-- [ ] Point-in-time folder snapshots
-- [ ] Content-hash based duplicate detection and resolution
+- [x] Scheduled full/incremental device backups (`lib/backup/`)
+- [x] Point-in-time folder snapshots with restore
+- [x] Content-hash (SHA-256) duplicate detection and resolution (`lib/dedup/`)
+- [x] GUI: backup manager, snapshot manager, duplicate report
 
 ### Step 15: Docker & Deployment Finalization
 
@@ -156,7 +157,7 @@ Final integration testing and documentation.
 | 11 | Collaboration Features | **Complete** |
 | 12 | Admin Platform | **Complete** |
 | 13 | Storage Pools (Multi-Disk) | **Complete** |
-| 14 | Backup & Deduplication | Planned |
+| 14 | Backup & Deduplication | COMPLETE |
 | 15 | Docker & Deployment Finalization | Planned |
 
 ---

@@ -290,25 +290,25 @@ Multiple disk support for Proxmox, ZFS, RAID, and LVM environments.
 
 ## Step 14: Backup & Deduplication
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 5-6 hours
 **Depends on:** Step 1, Step 4, Step 13
 
 Device backups, snapshots, and duplicate detection.
 
-- [ ] `backups` table: id, user_id, device_id, type (full/incremental), status, started_at, completed_at, size_bytes
-- [ ] Automatic device backups (`lib/backup/`) -- scheduled full/incremental backups to server
-- [ ] Backup history with restore points
-- [ ] `snapshots` table: id, user_id, folder_id, created_at, metadata_json
-- [ ] Snapshot backups -- point-in-time folder tree snapshots (leverage ZFS snapshots where available)
-- [ ] Manual and scheduled snapshot creation
-- [ ] Duplicate detection (`lib/dedup/`) -- background worker scanning by content hash
-- [ ] Duplicate report -- show potential space savings
-- [ ] One-click deduplication -- replace duplicates with hardlinks/symlinks
-- [ ] GUI: backup management (list, create, restore)
-- [ ] GUI: snapshot management (list, create, restore)
-- [ ] GUI: duplicate report with resolve actions
-- [ ] API endpoints: `GET/POST /rest/backups`, `GET/POST /rest/snapshots`, `GET /rest/duplicates`, `POST /rest/duplicates/resolve`
+- [x] `backups` table: id, user_id, folder_id, type (full/incremental), status, started_at, completed_at, size_bytes, backup_path
+- [x] Automatic device backups (`lib/backup/`) -- scheduled full/incremental backups to server
+- [x] Backup history with restore points
+- [x] `snapshots` table: id, user_id, folder_id, name, snapshot_path, size_bytes, metadata_json, created_at
+- [x] Snapshot backups -- point-in-time folder tree snapshots
+- [x] Manual snapshot creation
+- [x] Duplicate detection (`lib/dedup/`) -- background worker scanning by content hash (SHA-256)
+- [x] Duplicate report -- show potential space savings
+- [x] One-click deduplication -- replace duplicates with hardlinks or delete
+- [x] GUI: backup management (list, create, restore, delete)
+- [x] GUI: snapshot management (list, create, restore, delete)
+- [x] GUI: duplicate report with resolve actions
+- [x] API endpoints: `GET/POST/DELETE /rest/backups`, `POST /rest/backups/:id/restore`, `GET/POST/DELETE /rest/snapshots`, `POST /rest/snapshots/:id/restore`, `GET /rest/duplicates`, `POST /rest/duplicates/resolve`
 
 ---
 
