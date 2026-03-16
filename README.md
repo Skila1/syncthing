@@ -144,13 +144,13 @@ Final integration testing and documentation.
 | Step | Feature | Status |
 |------|---------|--------|
 | 1 | Multi-User Foundation & Folders | **Complete** |
-| 2 | User Quotas & Disk Usage | Planned |
-| 3 | Password Reset & MFA/2FA | Planned |
-| 4 | Access Control & Folder Permissions | Planned |
-| 5 | Share Links | Planned |
-| 6 | File Browser, Uploads & Search | Planned |
-| 7 | Trash, Versions & Cleanup | Planned |
-| 8 | Activity Feed & Notifications | Planned |
+| 2 | User Quotas & Disk Usage | **Complete** |
+| 3 | Password Reset & MFA/2FA | **Complete** |
+| 4 | Access Control & Folder Permissions | **Complete** |
+| 5 | Share Links | **Complete** |
+| 6 | File Browser, Uploads & Search | **Complete** |
+| 7 | Trash, Versions & Cleanup | **Complete** |
+| 8 | Activity Feed & Notifications | **Complete** |
 | 9 | Sync Enhancements | Planned |
 | 10 | Security Hardening | Planned |
 | 11 | Collaboration Features | Planned |
