@@ -1,0 +1,121 @@
+<div id="storagePoolsModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-hdd"></span>
+          <span translate>Storage Pools</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+
+        <table class="table table-condensed table-striped" ng-if="storagePools.list.length > 0">
+          <thead>
+            <tr>
+              <th translate>Name</th>
+              <th translate>Path</th>
+              <th translate>Used</th>
+              <th translate>Total</th>
+              <th translate>Status</th>
+              <th translate>Strategy</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="pool in storagePools.list">
+              <td><strong>{{pool.name}}</strong></td>
+              <td><code><small>{{pool.path}}</small></code></td>
+              <td>{{pool.usedBytes | binary}}B</td>
+              <td>{{pool.totalBytes > 0 ? (pool.totalBytes | binary) + 'B' : 'N/A'}}</td>
+              <td>
+                <span class="label" ng-class="{'label-success': pool.status === 'online', 'label-warning': pool.status === 'degraded', 'label-danger': pool.status === 'offline'}">{{pool.status}}</span>
+              </td>
+              <td>{{pool.strategy}}</td>
+              <td class="text-right">
+                <button class="btn btn-xs btn-default" ng-click="refreshPoolHealth(pool)" title="Refresh">
+                  <span class="fas fa-sync"></span>
+                </button>
+                <button class="btn btn-xs btn-info" ng-click="showPoolUsers(pool)" title="Users">
+                  <span class="fas fa-users"></span>
+                </button>
+                <button class="btn btn-xs btn-danger" ng-click="deletePoolItem(pool)">
+                  <span class="fas fa-trash"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div ng-if="storagePools.list.length === 0" class="text-muted text-center" style="padding:20px;">
+          <p translate>No storage pools configured.</p>
+        </div>
+
+        <!-- Add pool -->
+        <div class="well well-sm" style="margin-top:8px;">
+          <h6 translate>Add Storage Pool</h6>
+          <div class="row">
+            <div class="col-sm-3">
+              <input type="text" class="form-control input-sm" ng-model="storagePools.newPool.name" placeholder="Pool Name" />
+            </div>
+            <div class="col-sm-4">
+              <input type="text" class="form-control input-sm" ng-model="storagePools.newPool.path" placeholder="/mnt/disk1" />
+            </div>
+            <div class="col-sm-2">
+              <select class="form-control input-sm" ng-model="storagePools.newPool.strategy">
+                <option value="manual">Manual</option>
+                <option value="round-robin">Round-Robin</option>
+                <option value="fill-first">Fill-First</option>
+              </select>
+            </div>
+            <div class="col-sm-3">
+              <button class="btn btn-success btn-sm btn-block" ng-click="createPool()">
+                <span class="fas fa-plus"></span> Add Pool
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pool users sub-panel -->
+        <div ng-if="storagePools.selectedPool" class="panel panel-info" style="margin-top:12px;">
+          <div class="panel-heading">
+            <span class="fas fa-users"></span>
+            Users on <strong>{{storagePools.selectedPool.name}}</strong>
+            <button class="close" ng-click="storagePools.selectedPool = null"><span>&times;</span></button>
+          </div>
+          <div class="panel-body">
+            <table class="table table-condensed" ng-if="storagePools.poolUsers.length > 0">
+              <tbody>
+                <tr ng-repeat="a in storagePools.poolUsers">
+                  <td>User #{{a.userId}}</td>
+                  <td class="text-right">
+                    <button class="btn btn-xs btn-danger" ng-click="removeUserFromPool(a.userId)">
+                      <span class="fas fa-times"></span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p ng-if="storagePools.poolUsers.length === 0" class="text-muted" translate>No users assigned.</p>
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="input-group input-group-sm">
+                  <input type="number" class="form-control" ng-model="storagePools.assignUserId" placeholder="User ID" />
+                  <span class="input-group-btn">
+                    <button class="btn btn-success" ng-click="assignUserToPool()">
+                      <span class="fas fa-plus"></span> Assign
+                    </button>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1631,6 +1631,75 @@ angular.module('syncthing.core')
             });
         };
 
+        // --- Storage Pools ---
+
+        $scope.storagePools = {
+            list: [],
+            newPool: { name: '', path: '', strategy: 'manual' },
+            selectedPool: null,
+            poolUsers: [],
+            assignUserId: null
+        };
+
+        $scope.showStoragePools = function () {
+            $scope.refreshStoragePools();
+            $('#storagePoolsModal').modal('show');
+        };
+
+        $scope.refreshStoragePools = function () {
+            $http.get(urlbase + '/storage/pools').success(function (data) {
+                $scope.storagePools.list = data || [];
+            });
+        };
+
+        $scope.createPool = function () {
+            var np = $scope.storagePools.newPool;
+            if (!np.name || !np.path) return;
+            $http.post(urlbase + '/storage/pools', np).success(function () {
+                $scope.storagePools.newPool = { name: '', path: '', strategy: 'manual' };
+                $scope.refreshStoragePools();
+            });
+        };
+
+        $scope.deletePoolItem = function (pool) {
+            $http.delete(urlbase + '/storage/pools/' + pool.id).success(function () {
+                $scope.refreshStoragePools();
+                if ($scope.storagePools.selectedPool && $scope.storagePools.selectedPool.id === pool.id) {
+                    $scope.storagePools.selectedPool = null;
+                }
+            });
+        };
+
+        $scope.refreshPoolHealth = function (pool) {
+            $http.post(urlbase + '/storage/pools/' + pool.id + '/refresh').success(function (data) {
+                angular.extend(pool, data);
+            });
+        };
+
+        $scope.showPoolUsers = function (pool) {
+            $scope.storagePools.selectedPool = pool;
+            $http.get(urlbase + '/storage/pools/' + pool.id + '/users').success(function (data) {
+                $scope.storagePools.poolUsers = data || [];
+            });
+        };
+
+        $scope.assignUserToPool = function () {
+            if (!$scope.storagePools.assignUserId || !$scope.storagePools.selectedPool) return;
+            $http.post(urlbase + '/storage/pool-assign', {
+                userId: $scope.storagePools.assignUserId,
+                poolId: $scope.storagePools.selectedPool.id
+            }).success(function () {
+                $scope.storagePools.assignUserId = null;
+                $scope.showPoolUsers($scope.storagePools.selectedPool);
+            });
+        };
+
+        $scope.removeUserFromPool = function (userId) {
+            $http.delete(urlbase + '/storage/pool-assign/' + userId).success(function () {
+                $scope.showPoolUsers($scope.storagePools.selectedPool);
+            });
+        };
+
         // --- Admin Dashboard ---
 
         $scope.adminDash = {

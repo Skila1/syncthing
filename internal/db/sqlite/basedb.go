@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	currentSchemaVersion = 16
+	currentSchemaVersion = 17
 	applicationIDMain    = 0x53546d6e // "STmn", Syncthing main database
 	applicationIDFolder  = 0x53546664 // "STfd", Syncthing folder database
 )

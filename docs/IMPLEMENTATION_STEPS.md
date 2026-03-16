@@ -270,21 +270,21 @@ Full admin dashboard with provisioning, analytics, and system monitoring.
 
 ## Step 13: Storage Pools (Multi-Disk)
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 3-4 hours
 **Depends on:** Step 2
 
 Multiple disk support for Proxmox, ZFS, RAID, and LVM environments.
 
-- [ ] `storage_pools` table: id, name, path, total_bytes, used_bytes, status, strategy
-- [ ] Storage pool management (`lib/storage/`) -- add/remove pools, health monitoring
-- [ ] Pool selection strategy: per-user assignment, round-robin, or fill-first
-- [ ] Pool health detection -- offline/degraded alerts
-- [ ] Docker: multiple volume mount points for pools
-- [ ] Docker: `ST_STORAGE_POOLS` env var for comma-separated pool paths
-- [ ] GUI: admin storage pool management (add/remove pools, view health)
-- [ ] GUI: per-user pool assignment in user edit
-- [ ] API endpoints: `GET/POST/DELETE /rest/storage/pools`
+- [x] `storage_pools` table: id, name, path, total_bytes, used_bytes, status, strategy
+- [x] Storage pool management (`lib/storage/`) -- add/remove pools, health monitoring
+- [x] Pool selection strategy: per-user assignment, round-robin, or fill-first
+- [x] Pool health detection -- offline/degraded alerts
+- [x] Docker: multiple volume mount points for pools
+- [x] Docker: `ST_STORAGE_POOLS` env var for comma-separated pool paths
+- [x] GUI: admin storage pool management (add/remove pools, view health)
+- [x] GUI: per-user pool assignment in user edit
+- [x] API endpoints: `GET/POST/DELETE /rest/storage/pools`
 
 ---
 
