@@ -2,91 +2,177 @@
 
 ---
 
-[![MPLv2 License](https://img.shields.io/badge/license-MPLv2-blue.svg?style=flat-square)](https://www.mozilla.org/MPL/2.0/)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/88/badge)](https://bestpractices.coreinfrastructure.org/projects/88)
-[![Go Report Card](https://goreportcard.com/badge/github.com/syncthing/syncthing)](https://goreportcard.com/report/github.com/syncthing/syncthing)
+> **Skila1 Fork** -- This fork is focused exclusively on delivering a multi-user file synchronization platform as a **Docker-only deployment**. We are not targeting or supporting native installs across multiple operating systems. The server runs in a container; clients connect to it. That's it.
 
-## Goals
+---
+
+## What Skila1 Has Changed
+
+This fork transforms Syncthing from a single-user peer-to-peer sync tool into a multi-user, admin-managed file platform. Below is the full roadmap. Checked items are complete.
+
+### Step 1: Multi-User Foundation & Separate Folders -- COMPLETE
+
+Multi-user authentication, per-user isolated storage roots, role-based access (admin/user), user management GUI, session management, and REST API for user CRUD.
+
+- [x] Multi-user database (users + sessions tables in SQLite)
+- [x] User CRUD with bcrypt password hashing
+- [x] Multi-user auth middleware (session cookies, Basic auth, API key fallback)
+- [x] Role-based API guards (admin-only routes)
+- [x] Per-user root folder creation on signup
+- [x] Admin user management panel in GUI
+- [x] Conditional rendering (admin vs regular user)
+- [x] Initial admin account via `ST_ADMIN_USER` / `ST_ADMIN_PASSWORD` env vars
+- [x] Docker entrypoint updates for per-user directories
+
+### Step 2: User Quotas & Disk Usage Dashboard
+
+Admin-controlled storage quotas per user with real-time usage tracking.
+
+- [ ] Quota enforcement in sync engine and uploads
+- [ ] Per-user disk usage calculation
+- [ ] Warning thresholds (80%, 95%)
+- [ ] Admin + user storage dashboards
+
+### Step 3: Password Reset & MFA/2FA
+
+Password recovery and TOTP-based two-factor authentication.
+
+- [ ] Admin-initiated and self-service password reset
+- [ ] TOTP MFA enrollment, verification, and recovery codes
+- [ ] "Remember this device" support
+
+### Step 4: Access Control & Folder Permissions
+
+Per-folder permissions: private, shared with specific users, read-only.
+
+- [ ] Folder permission system (private / read / read-write per user)
+- [ ] Device ownership linked to users
+- [ ] Permission enforcement at API and sync engine layers
+
+### Step 5: Share Links
+
+Temporary, optionally password-protected download links.
+
+- [ ] Expiring share links with download limits
+- [ ] Public download endpoint (no auth)
+- [ ] Admin link management
+
+### Step 6: File Browser, Uploads & Search
+
+Web-based file management directly in the GUI.
+
+- [ ] Directory browsing, file metadata, previews
+- [ ] Chunked file upload with drag-and-drop
+- [ ] Filename search
+
+### Step 7: Trash, Version History & Cleanup Policies
+
+Soft deletes, file versioning, and automatic cleanup.
+
+- [ ] Per-user trash folder with configurable retention
+- [ ] File version history with restore
+- [ ] Cleanup policy scheduler
+
+### Step 8: Activity Feed & Notifications
+
+User-scoped activity tracking and change alerts.
+
+- [ ] Activity feed (file changes, shares, syncs)
+- [ ] In-app and optional email notifications
+- [ ] Per-folder notification preferences
+
+### Step 9: Sync Enhancements
+
+Selective sync, scheduling, bandwidth limits, and conflict resolution.
+
+- [ ] Per-device selective sync
+- [ ] Per-user bandwidth limits
+- [ ] Time-window sync scheduling
+- [ ] Conflict resolution UI (keep local, keep remote, merge)
+
+### Step 10: Security Hardening
+
+Encryption, IP restrictions, and audit logging.
+
+- [ ] Per-user at-rest encryption
+- [ ] IP allow/deny lists per user
+- [ ] Immutable audit log for all security events
+
+### Step 11: Collaboration Features
+
+Shared folders, groups, comments, and change notifications.
+
+- [ ] Shared folders between users with multi-writer conflict detection
+- [ ] Group-based folder sharing
+- [ ] File/folder comments
+
+### Step 12: Admin Platform
+
+Full admin dashboard with provisioning, analytics, and monitoring.
+
+- [ ] Bulk user provisioning (CSV import, invite links)
+- [ ] Storage analytics and exportable reports
+- [ ] Cross-user device management
+- [ ] System health monitoring and alerting
+
+### Step 13: Storage Pools (Multi-Disk)
+
+Multiple disk support for ZFS, RAID, and LVM environments.
+
+- [ ] Storage pool management (add/remove, health monitoring)
+- [ ] Per-user pool assignment strategies
+- [ ] Docker multi-volume support
+
+### Step 14: Backup & Deduplication
+
+Device backups, snapshots, and duplicate detection.
+
+- [ ] Scheduled full/incremental device backups
+- [ ] Point-in-time folder snapshots
+- [ ] Content-hash based duplicate detection and resolution
+
+### Step 15: Docker & Deployment Finalization
+
+Final integration testing and documentation.
+
+- [ ] Updated Dockerfile with all volume mounts and migration steps
+- [ ] Full end-to-end test suite
+- [ ] Complete environment variable documentation
+
+### Roadmap Summary
+
+| Step | Feature | Status |
+|------|---------|--------|
+| 1 | Multi-User Foundation & Folders | **Complete** |
+| 2 | User Quotas & Disk Usage | Planned |
+| 3 | Password Reset & MFA/2FA | Planned |
+| 4 | Access Control & Folder Permissions | Planned |
+| 5 | Share Links | Planned |
+| 6 | File Browser, Uploads & Search | Planned |
+| 7 | Trash, Versions & Cleanup | Planned |
+| 8 | Activity Feed & Notifications | Planned |
+| 9 | Sync Enhancements | Planned |
+| 10 | Security Hardening | Planned |
+| 11 | Collaboration Features | Planned |
+| 12 | Admin Platform | Planned |
+| 13 | Storage Pools (Multi-Disk) | Planned |
+| 14 | Backup & Deduplication | Planned |
+| 15 | Docker & Deployment Finalization | Planned |
+
+---
+
+## About Syncthing
 
 Syncthing is a **continuous file synchronization program**. It synchronizes
-files between two or more computers. We strive to fulfill the goals below.
-The goals are listed in order of importance, the most important ones first.
-This is the summary version of the goal list - for more
-commentary, see the full [Goals document][13].
-
-Syncthing should be:
-
-1. **Safe From Data Loss**
-
-   Protecting the user's data is paramount. We take every reasonable
-   precaution to avoid corrupting the user's files.
-
-2. **Secure Against Attackers**
-
-   Again, protecting the user's data is paramount. Regardless of our other
-   goals, we must never allow the user's data to be susceptible to
-   eavesdropping or modification by unauthorized parties.
-
-3. **Easy to Use**
-
-   Syncthing should be approachable, understandable, and inclusive.
-
-4. **Automatic**
-
-   User interaction should be required only when absolutely necessary.
-
-5. **Universally Available**
-
-   Syncthing should run on every common computer. We are mindful that the
-   latest technology is not always available to every individual.
-
-6. **For Individuals**
-
-   Syncthing is primarily about empowering the individual user with safe,
-   secure, and easy to use file synchronization.
-
-7. **Everything Else**
-
-   There are many things we care about that don't make it on to the list. It
-   is fine to optimize for these values, as long as they are not in conflict
-   with the stated goals above.
-
-## Getting Started
-
-Take a look at the [getting started guide][2].
-
-There are a few examples for keeping Syncthing running in the background
-on your system in [the etc directory][3]. There are also several [GUI
-implementations][11] for Windows, Mac, and Linux.
+files between two or more computers. For more details, see the full [Goals document][13].
 
 ## Docker
 
 To run Syncthing in Docker, see [the Docker README][16].
 
-## Getting in Touch
-
-The first and best point of contact is the [Forum][8].
-If you've found something that is clearly a
-bug, feel free to report it in the [GitHub issue tracker][10].
-
-If you believe that you’ve found a Syncthing-related security vulnerability,
-please report it by emailing security@syncthing.net. Do not report it in the
-Forum or issue tracker.
-
 ## Building
 
-Building Syncthing from source is easy. After extracting the source bundle from
-a release or checking out git, you just need to run `go run build.go` and the
-binaries are created in `./bin`. There's [a guide][5] with more details on the
-build process.
-
-## Signed Releases
-
-Release binaries are GPG signed with the key available from
-https://syncthing.net/security/. There is also a built-in automatic
-upgrade mechanism (disabled in some distribution channels) which uses a
-compiled in ECDSA signature. macOS and Windows binaries are also
-code-signed.
+Building from source: `go run build.go` -- binaries are created in `./bin`. See the [build guide][5] for details.
 
 ## Documentation
 
