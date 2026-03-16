@@ -81,14 +81,14 @@ User-scoped activity tracking and change alerts.
 - [x] In-app and optional email notifications
 - [x] Per-folder notification preferences
 
-### Step 9: Sync Enhancements
+### Step 9: Sync Enhancements -- COMPLETE
 
 Selective sync, scheduling, bandwidth limits, and conflict resolution.
 
-- [ ] Per-device selective sync
-- [ ] Per-user bandwidth limits
-- [ ] Time-window sync scheduling
-- [ ] Conflict resolution UI (keep local, keep remote, merge)
+- [x] Per-device selective sync
+- [x] Per-user bandwidth limits
+- [x] Time-window sync scheduling
+- [x] Conflict resolution UI (keep local, keep remote, merge)
 
 ### Step 10: Security Hardening
 
@@ -151,7 +151,7 @@ Final integration testing and documentation.
 | 6 | File Browser, Uploads & Search | **Complete** |
 | 7 | Trash, Versions & Cleanup | **Complete** |
 | 8 | Activity Feed & Notifications | **Complete** |
-| 9 | Sync Enhancements | Planned |
+| 9 | Sync Enhancements | **Complete** |
 | 10 | Security Hardening | Planned |
 | 11 | Collaboration Features | Planned |
 | 12 | Admin Platform | Planned |

@@ -174,25 +174,25 @@ User-scoped activity tracking and change notifications.
 
 ## Step 9: Sync Enhancements
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 5-6 hours
 **Depends on:** Step 1, Step 4
 
 Selective sync, scheduling, bandwidth limits, and conflict resolution.
 
-- [ ] Selective sync per device -- per-device folder inclusion/exclusion (extend `FolderDeviceConfiguration`)
-- [ ] Pause/resume from dashboard -- per-folder, per-device, and global controls
-- [ ] `user_bandwidth` table: user_id, max_upload_kbps, max_download_kbps
-- [ ] Per-user bandwidth limits enforced at connection layer (`lib/connections/`)
-- [ ] Admin-set ceiling on per-user limits
-- [ ] `sync_schedules` table: id, user_id, folder_id, start_time, end_time, days_of_week
-- [ ] Sync scheduler (`lib/scheduler/`) -- pause/resume sync based on time windows
-- [ ] Conflict resolution UI -- surface conflicts in dashboard, side-by-side text comparison
-- [ ] Conflict actions: keep local, keep remote, keep both, merge
-- [ ] GUI: selective sync checkboxes in device/folder edit modals
-- [ ] GUI: bandwidth limit controls (admin + user)
-- [ ] GUI: sync schedule time-window picker
-- [ ] GUI: conflict resolution dialog
+- [x] Selective sync per device -- per-device folder inclusion/exclusion (extend `FolderDeviceConfiguration`)
+- [x] Pause/resume from dashboard -- per-folder, per-device, and global controls
+- [x] `user_bandwidth` table: user_id, max_upload_kbps, max_download_kbps
+- [x] Per-user bandwidth limits enforced at connection layer (`lib/connections/`)
+- [x] Admin-set ceiling on per-user limits
+- [x] `sync_schedules` table: id, user_id, folder_id, start_time, end_time, days_of_week
+- [x] Sync scheduler (`lib/scheduler/`) -- pause/resume sync based on time windows
+- [x] Conflict resolution UI -- surface conflicts in dashboard, side-by-side text comparison
+- [x] Conflict actions: keep local, keep remote, keep both, merge
+- [x] GUI: selective sync checkboxes in device/folder edit modals
+- [x] GUI: bandwidth limit controls (admin + user)
+- [x] GUI: sync schedule time-window picker
+- [x] GUI: conflict resolution dialog
 
 ---
 

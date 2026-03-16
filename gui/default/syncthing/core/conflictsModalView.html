@@ -1,0 +1,62 @@
+<div id="conflictsModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-exclamation-triangle text-warning"></span>
+          <span translate>Sync Conflicts</span> &mdash; {{conflictView.folderLabel}}
+        </h4>
+      </div>
+      <div class="modal-body" style="min-height:200px;">
+        <div ng-if="conflictView.loading" class="text-center" style="padding:40px;">
+          <span class="fas fa-spinner fa-spin fa-2x"></span>
+        </div>
+
+        <div ng-if="!conflictView.loading && conflictView.list.length === 0" class="text-muted text-center" style="padding:40px;">
+          <span class="fas fa-check-circle fa-3x text-success"></span>
+          <p translate style="margin-top:12px;">No conflicts found.</p>
+        </div>
+
+        <table class="table table-condensed table-hover" ng-if="!conflictView.loading && conflictView.list.length > 0">
+          <thead>
+            <tr>
+              <th translate>Conflict File</th>
+              <th translate>Original</th>
+              <th translate>Size</th>
+              <th translate>Date</th>
+              <th translate>Device</th>
+              <th style="width:200px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="c in conflictView.list">
+              <td><small>{{c.path}}</small></td>
+              <td><small>{{c.originalPath}}</small></td>
+              <td>{{c.size | binary}}B</td>
+              <td>{{c.modTime | date:'short'}}</td>
+              <td><small>{{c.deviceShort}}</small></td>
+              <td class="text-right">
+                <button class="btn btn-xs btn-success" ng-click="resolveConflict(c, 'keep-original')" title="Keep Original">
+                  <span class="fas fa-file"></span> Original
+                </button>
+                <button class="btn btn-xs btn-warning" ng-click="resolveConflict(c, 'keep-conflict')" title="Keep Conflict">
+                  <span class="fas fa-file-alt"></span> Conflict
+                </button>
+                <button class="btn btn-xs btn-default" ng-click="resolveConflict(c, 'keep-both')" title="Keep Both">
+                  <span class="fas fa-copy"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" ng-click="refreshConflicts()">
+          <span class="fas fa-sync"></span> <span translate>Refresh</span>
+        </button>
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -132,6 +132,7 @@
               <li ng-if="isAdmin()"><a href="" ng-click="showAdminShareLinks()"><span class="fa fa-fw fa-link"></span>&nbsp;<span translate>Share Links</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="showCleanupPolicies()"><span class="fa fa-fw fa-broom"></span>&nbsp;<span translate>Cleanup Policies</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="showActivityFeed()"><span class="fa fa-fw fa-stream"></span>&nbsp;<span translate>Activity Feed</span></a></li>
+              <li ng-if="currentUser"><a href="" ng-click="showSyncSettings()"><span class="fa fa-fw fa-sliders-h"></span>&nbsp;<span translate>Sync Settings</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="startMFAEnroll()" ng-if="!currentUser.mfaEnabled"><span class="fa fa-fw fa-lock"></span>&nbsp;<span translate>Enable Two-Factor Auth</span></a></li>
               <li ng-if="currentUser && currentUser.mfaEnabled"><a href="" ng-click="disableMFA()"><span class="fa fa-fw fa-unlock"></span>&nbsp;<span translate>Disable Two-Factor Auth</span></a></li>
               <li class="divider" aria-hidden="true"></li>
@@ -760,6 +761,12 @@
                     <button type="button" class="btn btn-sm btn-default" ng-click="openFileBrowser(folder)" ng-if="currentUser">
                       <span class="fas fa-folder-open"></span>&nbsp;<span translate>Browse</span>
                     </button>
+                    <button type="button" class="btn btn-sm btn-default" ng-click="showConflicts(folder)" ng-if="currentUser">
+                      <span class="fas fa-exclamation-triangle"></span>&nbsp;<span translate>Conflicts</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-default" ng-click="toggleFolderPause(folder)" ng-if="currentUser">
+                      <span ng-class="folder.paused ? 'fas fa-play text-success' : 'fas fa-pause text-warning'"></span>
+                    </button>
                   </span>
                   <div class="clearfix"></div>
                 </div>
@@ -1176,6 +1183,8 @@
   <ng-include ng-if="currentUser" src="'syncthing/core/cleanupPoliciesModalView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/activityFeedModalView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/notificationsPanelView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/syncSettingsModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/conflictsModalView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>

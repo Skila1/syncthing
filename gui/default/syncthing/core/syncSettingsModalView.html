@@ -1,0 +1,120 @@
+<div id="syncSettingsModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-sliders-h"></span>
+          <span translate>Sync Settings</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+
+        <!-- Bandwidth Limits -->
+        <h5><span class="fas fa-tachometer-alt"></span> <span translate>Bandwidth Limits</span></h5>
+        <p class="text-muted"><small translate>Set to 0 for unlimited.</small></p>
+        <div class="row">
+          <div class="col-sm-6">
+            <div class="form-group">
+              <label translate>Upload (kbps)</label>
+              <input type="number" class="form-control" ng-model="syncSettings.bandwidth.maxSendKbps" min="0" />
+            </div>
+          </div>
+          <div class="col-sm-6">
+            <div class="form-group">
+              <label translate>Download (kbps)</label>
+              <input type="number" class="form-control" ng-model="syncSettings.bandwidth.maxRecvKbps" min="0" />
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" ng-click="saveBandwidth()">
+          <span class="fas fa-save"></span> <span translate>Save Bandwidth</span>
+        </button>
+
+        <hr />
+
+        <!-- Sync Schedules -->
+        <h5><span class="fas fa-clock"></span> <span translate>Sync Schedules</span></h5>
+        <p class="text-muted"><small translate>Define time windows when syncing is allowed. Outside these windows, syncing will be paused.</small></p>
+
+        <table class="table table-condensed table-striped" ng-if="syncSettings.schedules.length > 0">
+          <thead>
+            <tr>
+              <th translate>Folder</th>
+              <th translate>Start</th>
+              <th translate>End</th>
+              <th translate>Days</th>
+              <th translate>Enabled</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="sched in syncSettings.schedules">
+              <td>{{sched.folderId || '(All)'}}</td>
+              <td>{{sched.startTime}}</td>
+              <td>{{sched.endTime}}</td>
+              <td>{{formatDays(sched.daysOfWeek)}}</td>
+              <td>
+                <span ng-if="sched.enabled" class="text-success fas fa-check"></span>
+                <span ng-if="!sched.enabled" class="text-muted fas fa-times"></span>
+              </td>
+              <td>
+                <button class="btn btn-xs btn-danger" ng-click="deleteSchedule(sched)">
+                  <span class="fas fa-trash"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div ng-if="syncSettings.schedules.length === 0" class="text-muted" style="padding:8px 0;">
+          <p translate>No schedules configured. Syncing runs 24/7.</p>
+        </div>
+
+        <div class="well well-sm" style="margin-top:8px;">
+          <h6 translate>Add Schedule</h6>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label translate>Folder</label>
+                <select class="form-control input-sm" ng-model="syncSettings.newSchedule.folderId">
+                  <option value="">All Folders</option>
+                  <option ng-repeat="folder in folders" value="{{folder.id}}">{{folder.label || folder.id}}</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-sm-2">
+              <div class="form-group">
+                <label translate>Start</label>
+                <input type="time" class="form-control input-sm" ng-model="syncSettings.newSchedule.startTime" />
+              </div>
+            </div>
+            <div class="col-sm-2">
+              <div class="form-group">
+                <label translate>End</label>
+                <input type="time" class="form-control input-sm" ng-model="syncSettings.newSchedule.endTime" />
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label translate>Days</label>
+                <div>
+                  <label class="checkbox-inline" ng-repeat="d in dayLabels">
+                    <input type="checkbox" ng-checked="syncSettings.newSchedule.daysOfWeek.indexOf(d.val) >= 0" ng-click="toggleDay(d.val)" /> {{d.label}}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-success btn-sm" ng-click="addSchedule()">
+            <span class="fas fa-plus"></span> <span translate>Add</span>
+          </button>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

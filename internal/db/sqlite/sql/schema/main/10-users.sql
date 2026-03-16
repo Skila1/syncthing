@@ -161,3 +161,23 @@ CREATE TABLE IF NOT EXISTS notification_prefs (
 ;
 CREATE INDEX IF NOT EXISTS notification_prefs_user ON notification_prefs (user_id)
 ;
+
+CREATE TABLE IF NOT EXISTS user_bandwidth (
+    user_id INTEGER NOT NULL PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    max_send_kbps INTEGER NOT NULL DEFAULT 0, -- 0 = unlimited
+    max_recv_kbps INTEGER NOT NULL DEFAULT 0
+) STRICT
+;
+
+CREATE TABLE IF NOT EXISTS sync_schedules (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    folder_id TEXT NOT NULL DEFAULT '' COLLATE BINARY, -- empty = all folders
+    start_time TEXT NOT NULL COLLATE BINARY, -- "HH:MM" 24h format
+    end_time TEXT NOT NULL COLLATE BINARY,
+    days_of_week TEXT NOT NULL DEFAULT '0123456' COLLATE BINARY, -- 0=Sun 6=Sat
+    enabled INTEGER NOT NULL DEFAULT 1
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS sync_schedules_user ON sync_schedules (user_id)
+;

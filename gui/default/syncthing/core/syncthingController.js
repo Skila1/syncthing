@@ -1501,6 +1501,136 @@ angular.module('syncthing.core')
             }, 30000);
         }
 
+        // --- Sync Settings (Bandwidth + Schedules) ---
+
+        $scope.syncSettings = {
+            bandwidth: { maxSendKbps: 0, maxRecvKbps: 0 },
+            schedules: [],
+            newSchedule: { folderId: '', startTime: '00:00', endTime: '23:59', daysOfWeek: '0123456' }
+        };
+
+        $scope.dayLabels = [
+            { val: '0', label: 'Su' }, { val: '1', label: 'Mo' }, { val: '2', label: 'Tu' },
+            { val: '3', label: 'We' }, { val: '4', label: 'Th' }, { val: '5', label: 'Fr' }, { val: '6', label: 'Sa' }
+        ];
+
+        $scope.showSyncSettings = function () {
+            $scope.refreshBandwidth();
+            $scope.refreshSchedules();
+            $('#syncSettingsModal').modal('show');
+        };
+
+        $scope.refreshBandwidth = function () {
+            $http.get(urlbase + '/sync/bandwidth').success(function (data) {
+                $scope.syncSettings.bandwidth = data;
+            });
+        };
+
+        $scope.saveBandwidth = function () {
+            $http.put(urlbase + '/sync/bandwidth', $scope.syncSettings.bandwidth);
+        };
+
+        $scope.refreshSchedules = function () {
+            $http.get(urlbase + '/sync/schedules').success(function (data) {
+                $scope.syncSettings.schedules = data || [];
+            });
+        };
+
+        function timeToStr(val) {
+            if (!val) return '00:00';
+            if (typeof val === 'string') return val;
+            var d = new Date(val);
+            var h = ('0' + d.getHours()).slice(-2);
+            var m = ('0' + d.getMinutes()).slice(-2);
+            return h + ':' + m;
+        }
+
+        $scope.addSchedule = function () {
+            var ns = $scope.syncSettings.newSchedule;
+            $http.post(urlbase + '/sync/schedules', {
+                folderId: ns.folderId || '',
+                startTime: timeToStr(ns.startTime),
+                endTime: timeToStr(ns.endTime),
+                daysOfWeek: ns.daysOfWeek || '0123456',
+                enabled: true
+            }).success(function () {
+                $scope.syncSettings.newSchedule = { folderId: '', startTime: '00:00', endTime: '23:59', daysOfWeek: '0123456' };
+                $scope.refreshSchedules();
+            });
+        };
+
+        $scope.deleteSchedule = function (sched) {
+            $http.delete(urlbase + '/sync/schedules/' + sched.id).success(function () {
+                $scope.refreshSchedules();
+            });
+        };
+
+        $scope.toggleDay = function (dayVal) {
+            var days = $scope.syncSettings.newSchedule.daysOfWeek;
+            if (days.indexOf(dayVal) >= 0) {
+                $scope.syncSettings.newSchedule.daysOfWeek = days.replace(dayVal, '');
+            } else {
+                $scope.syncSettings.newSchedule.daysOfWeek += dayVal;
+            }
+        };
+
+        $scope.formatDays = function (daysStr) {
+            var map = { '0': 'Su', '1': 'Mo', '2': 'Tu', '3': 'We', '4': 'Th', '5': 'Fr', '6': 'Sa' };
+            var result = [];
+            for (var i = 0; i < daysStr.length; i++) {
+                if (map[daysStr[i]]) result.push(map[daysStr[i]]);
+            }
+            return result.join(', ');
+        };
+
+        // --- Conflicts ---
+
+        $scope.conflictView = {
+            folderId: '',
+            folderLabel: '',
+            list: [],
+            loading: false
+        };
+
+        $scope.showConflicts = function (folder) {
+            $scope.conflictView.folderId = folder.id;
+            $scope.conflictView.folderLabel = folder.label || folder.id;
+            $scope.refreshConflicts();
+            $('#conflictsModal').modal('show');
+        };
+
+        $scope.refreshConflicts = function () {
+            $scope.conflictView.loading = true;
+            $http.get(urlbase + '/sync/conflicts', {
+                params: { folder: $scope.conflictView.folderId }
+            }).success(function (data) {
+                $scope.conflictView.list = data || [];
+                $scope.conflictView.loading = false;
+            }).error(function () {
+                $scope.conflictView.list = [];
+                $scope.conflictView.loading = false;
+            });
+        };
+
+        $scope.resolveConflict = function (conflict, action) {
+            $http.post(urlbase + '/sync/conflicts/resolve', {
+                folderId: $scope.conflictView.folderId,
+                conflictPath: conflict.path,
+                action: action
+            }).success(function () {
+                $scope.refreshConflicts();
+            });
+        };
+
+        // --- Folder pause/resume ---
+
+        $scope.toggleFolderPause = function (folder) {
+            var endpoint = folder.paused ? '/sync/resume/folder' : '/sync/pause/folder';
+            $http.post(urlbase + endpoint, { folderId: folder.id }).success(function (data) {
+                folder.paused = data.paused;
+            });
+        };
+
         function refreshNoAuthWarning() {
             if (!$scope.system || !$scope.config || !$scope.config.gui) {
                 // We need all to be able to determine the state.
