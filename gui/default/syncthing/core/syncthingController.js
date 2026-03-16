@@ -1631,6 +1631,117 @@ angular.module('syncthing.core')
             });
         };
 
+        // --- Admin Dashboard ---
+
+        $scope.adminDash = {
+            tab: 'analytics',
+            analytics: {},
+            health: {},
+            devices: [],
+            invites: [],
+            newInvite: { role: 'user', maxUses: 1 },
+            importResult: null,
+            alertRules: [],
+            newAlert: { metric: 'heapAlloc', operator: '>', threshold: 0 },
+            bandwidthCeiling: { maxSendKbps: 0, maxRecvKbps: 0 }
+        };
+
+        $scope.showAdminDashboard = function () {
+            $scope.adminDash.tab = 'analytics';
+            $scope.refreshAdminAnalytics();
+            $('#adminDashboardModal').modal('show');
+        };
+
+        $scope.refreshAdminAnalytics = function () {
+            $http.get(urlbase + '/admin/analytics').success(function (data) {
+                $scope.adminDash.analytics = data;
+            });
+        };
+
+        $scope.refreshAdminHealth = function () {
+            $http.get(urlbase + '/admin/health').success(function (data) {
+                $scope.adminDash.health = data;
+            });
+        };
+
+        $scope.refreshAdminDevices = function () {
+            $http.get(urlbase + '/admin/devices').success(function (data) {
+                $scope.adminDash.devices = data || [];
+            });
+        };
+
+        $scope.refreshInvites = function () {
+            $http.get(urlbase + '/admin/invites').success(function (data) {
+                $scope.adminDash.invites = data || [];
+            });
+        };
+
+        $scope.createInvite = function () {
+            $http.post(urlbase + '/admin/invites', {
+                role: $scope.adminDash.newInvite.role || 'user',
+                maxUses: $scope.adminDash.newInvite.maxUses || 1
+            }).success(function () {
+                $scope.adminDash.newInvite = { role: 'user', maxUses: 1 };
+                $scope.refreshInvites();
+            });
+        };
+
+        $scope.deleteInviteItem = function (inv) {
+            $http.delete(urlbase + '/admin/invites/' + inv.id).success(function () {
+                $scope.refreshInvites();
+            });
+        };
+
+        $scope.bulkImportCSV = function () {
+            var fileInput = document.getElementById('csvImportFile');
+            if (!fileInput || !fileInput.files[0]) return;
+            var fd = new FormData();
+            fd.append('file', fileInput.files[0]);
+            $http.post(urlbase + '/admin/users/import', fd, {
+                transformRequest: angular.identity,
+                headers: { 'Content-Type': undefined }
+            }).success(function (data) {
+                $scope.adminDash.importResult = data;
+                fileInput.value = '';
+            });
+        };
+
+        $scope.refreshAlertRules = function () {
+            $http.get(urlbase + '/admin/alerts').success(function (data) {
+                $scope.adminDash.alertRules = data || [];
+            });
+        };
+
+        $scope.createAlertRule = function () {
+            var na = $scope.adminDash.newAlert;
+            if (!na.metric || !na.threshold) return;
+            $http.post(urlbase + '/admin/alerts', {
+                metric: na.metric,
+                operator: na.operator || '>',
+                threshold: na.threshold,
+                enabled: true
+            }).success(function () {
+                $scope.adminDash.newAlert = { metric: 'heapAlloc', operator: '>', threshold: 0 };
+                $scope.refreshAlertRules();
+            });
+        };
+
+        $scope.deleteAlertItem = function (ar) {
+            $http.delete(urlbase + '/admin/alerts/' + ar.id).success(function () {
+                $scope.refreshAlertRules();
+            });
+        };
+
+        $scope.refreshBandwidthCeiling = function () {
+            $http.get(urlbase + '/admin/bandwidth-ceiling').success(function (data) {
+                $scope.adminDash.bandwidthCeiling = data;
+            });
+        };
+
+        $scope.saveBandwidthCeiling = function () {
+            $http.put(urlbase + '/admin/bandwidth-ceiling', $scope.adminDash.bandwidthCeiling);
+        };
+
         // --- Group Management ---
 
         $scope.groupMgmt = {

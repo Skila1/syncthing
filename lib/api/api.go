@@ -62,6 +62,7 @@ import (
 	"github.com/syncthing/syncthing/lib/comments"
 	"github.com/syncthing/syncthing/lib/encryption"
 	"github.com/syncthing/syncthing/lib/groups"
+	"github.com/syncthing/syncthing/lib/provisioning"
 	"github.com/syncthing/syncthing/lib/notifications"
 	"github.com/syncthing/syncthing/lib/sharing"
 	"github.com/syncthing/syncthing/lib/syncext"
@@ -107,6 +108,7 @@ type service struct {
 	encryptionStore      encryption.Store
 	groupManager         *groups.Manager
 	commentStore         comments.Store
+	provisioningStore    provisioning.Store
 	noUpgrade            bool
 	tlsDefaultCommonName string
 	configChanged        chan struct{} // signals intentional listener close due to config change
@@ -130,7 +132,7 @@ type Service interface {
 	WaitForStart() error
 }
 
-func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager, permManager *permissions.Manager, shareManager *sharing.Manager, cleanupStore trash.CleanupStore, notifManager *notifications.Manager, syncExtStore syncext.Store, auditLogger *audit.Logger, auditStore audit.Store, ipRestrictionStore audit.IPRestrictionStore, encryptionStore encryption.Store, groupManager *groups.Manager, commentStore comments.Store) Service {
+func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager, permManager *permissions.Manager, shareManager *sharing.Manager, cleanupStore trash.CleanupStore, notifManager *notifications.Manager, syncExtStore syncext.Store, auditLogger *audit.Logger, auditStore audit.Store, ipRestrictionStore audit.IPRestrictionStore, encryptionStore encryption.Store, groupManager *groups.Manager, commentStore comments.Store, provisioningStore provisioning.Store) Service {
 	return &service{
 		id:      id,
 		cfg:     cfg,
@@ -157,6 +159,7 @@ func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonNam
 		encryptionStore:      encryptionStore,
 		groupManager:         groupManager,
 		commentStore:         commentStore,
+		provisioningStore:    provisioningStore,
 		guiErrors:            errors,
 		systemLog:            systemLog,
 		noUpgrade:            noUpgrade,
@@ -446,6 +449,9 @@ func (s *service) Serve(ctx context.Context) error {
 		}
 		if s.commentStore != nil {
 			s.registerCommentEndpoints(restMux)
+		}
+		if s.provisioningStore != nil {
+			s.registerAdminPlatformEndpoints(restMux)
 		}
 	} else if guiCfg.IsAuthEnabled() {
 		tokenCookieManager := newTokenCookieManager(s.id.Short().String(), guiCfg, s.evLogger, s.miscDB)

@@ -243,28 +243,28 @@ Shared folders, groups, comments, and change notifications.
 
 ## Step 12: Admin Platform
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 4-5 hours
 **Depends on:** Step 1, Step 2, Step 4, Step 9
 
 Full admin dashboard with provisioning, analytics, and system monitoring.
 
-- [ ] User provisioning -- bulk create via CSV import, invite links
-- [ ] Account lifecycle management -- active, suspended, deleted states with data retention
-- [ ] Storage analytics dashboard -- total usage, per-user breakdown, growth trends, largest files
-- [ ] Exportable reports (CSV/JSON)
-- [ ] Admin device management -- view all devices across all users, force-disconnect, remove, reassign
-- [ ] Global bandwidth control -- instance-wide upload/download limits
-- [ ] Real-time bandwidth usage display
-- [ ] System health monitoring -- CPU, memory, disk I/O, network, active connections, sync queue
-- [ ] Extended health check endpoint (builds on existing `/rest/noauth/health`)
-- [ ] Alerting -- configurable thresholds trigger admin notifications
-- [ ] GUI: admin dashboard home with health overview
-- [ ] GUI: storage analytics charts
-- [ ] GUI: device management table (cross-user)
-- [ ] GUI: bandwidth control panel
-- [ ] GUI: system health charts
-- [ ] API endpoints: `GET /rest/admin/analytics`, `GET /rest/admin/health`, `GET /rest/admin/devices`, `PUT /rest/admin/bandwidth`
+- [x] User provisioning -- bulk create via CSV import, invite links
+- [x] Account lifecycle management -- active, suspended, deleted states with data retention
+- [x] Storage analytics dashboard -- total usage, per-user breakdown, growth trends, largest files
+- [x] Exportable reports (CSV/JSON)
+- [x] Admin device management -- view all devices across all users, force-disconnect, remove, reassign
+- [x] Global bandwidth control -- instance-wide upload/download limits
+- [x] Real-time bandwidth usage display
+- [x] System health monitoring -- CPU, memory, disk I/O, network, active connections, sync queue
+- [x] Extended health check endpoint (builds on existing `/rest/noauth/health`)
+- [x] Alerting -- configurable thresholds trigger admin notifications
+- [x] GUI: admin dashboard home with health overview
+- [x] GUI: storage analytics charts
+- [x] GUI: device management table (cross-user)
+- [x] GUI: bandwidth control panel
+- [x] GUI: system health charts
+- [x] API endpoints: `GET /rest/admin/analytics`, `GET /rest/admin/health`, `GET /rest/admin/devices`, `PUT /rest/admin/bandwidth`
 
 ---
 

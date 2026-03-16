@@ -1,0 +1,240 @@
+<div id="adminDashboardModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-tachometer-alt"></span>
+          <span translate>Admin Dashboard</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" style="margin-bottom:12px;">
+          <li ng-class="{active: adminDash.tab === 'analytics'}"><a href="" ng-click="adminDash.tab = 'analytics'">Analytics</a></li>
+          <li ng-class="{active: adminDash.tab === 'health'}"><a href="" ng-click="adminDash.tab = 'health'; refreshAdminHealth()">Health</a></li>
+          <li ng-class="{active: adminDash.tab === 'devices'}"><a href="" ng-click="adminDash.tab = 'devices'; refreshAdminDevices()">Devices</a></li>
+          <li ng-class="{active: adminDash.tab === 'invites'}"><a href="" ng-click="adminDash.tab = 'invites'; refreshInvites()">Invites</a></li>
+          <li ng-class="{active: adminDash.tab === 'alerts'}"><a href="" ng-click="adminDash.tab = 'alerts'; refreshAlertRules()">Alerts</a></li>
+          <li ng-class="{active: adminDash.tab === 'bandwidth'}"><a href="" ng-click="adminDash.tab = 'bandwidth'; refreshBandwidthCeiling()">Bandwidth</a></li>
+        </ul>
+
+        <!-- Analytics tab -->
+        <div ng-if="adminDash.tab === 'analytics'">
+          <div class="row">
+            <div class="col-sm-3 text-center">
+              <h3>{{adminDash.analytics.totalUsers}}</h3>
+              <p class="text-muted" translate>Users</p>
+            </div>
+            <div class="col-sm-3 text-center">
+              <h3>{{adminDash.analytics.totalFolders}}</h3>
+              <p class="text-muted" translate>Folders</p>
+            </div>
+            <div class="col-sm-3 text-center">
+              <h3>{{adminDash.analytics.totalDevices}}</h3>
+              <p class="text-muted" translate>Devices</p>
+            </div>
+            <div class="col-sm-3 text-center">
+              <h3>{{adminDash.analytics.totalUsed | binary}}B</h3>
+              <p class="text-muted" translate>Total Used</p>
+            </div>
+          </div>
+          <hr />
+          <h5 translate>Per-User Storage</h5>
+          <table class="table table-condensed table-striped">
+            <thead><tr><th>User</th><th>Used</th><th>Quota</th><th>%</th></tr></thead>
+            <tbody>
+              <tr ng-repeat="u in adminDash.analytics.perUser">
+                <td>{{u.username}}</td>
+                <td>{{u.usedBytes | binary}}B</td>
+                <td>{{u.quotaBytes > 0 ? (u.quotaBytes | binary) + 'B' : 'Unlimited'}}</td>
+                <td>
+                  <div class="progress" style="margin:0;min-width:80px;">
+                    <div class="progress-bar" ng-class="{'progress-bar-danger': u.quotaBytes > 0 && (u.usedBytes/u.quotaBytes*100) > 90, 'progress-bar-warning': u.quotaBytes > 0 && (u.usedBytes/u.quotaBytes*100) > 75}" ng-style="{width: (u.quotaBytes > 0 ? (u.usedBytes/u.quotaBytes*100) : 0) + '%'}"></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Health tab -->
+        <div ng-if="adminDash.tab === 'health'">
+          <div class="row">
+            <div class="col-sm-3 text-center">
+              <h4>{{adminDash.health.numCPU}}</h4>
+              <p class="text-muted">CPUs</p>
+            </div>
+            <div class="col-sm-3 text-center">
+              <h4>{{adminDash.health.heapAlloc | binary}}B</h4>
+              <p class="text-muted">Heap Used</p>
+            </div>
+            <div class="col-sm-3 text-center">
+              <h4>{{adminDash.health.goroutines}}</h4>
+              <p class="text-muted">Goroutines</p>
+            </div>
+            <div class="col-sm-3 text-center">
+              <h4>{{adminDash.health.numGC}}</h4>
+              <p class="text-muted">GC Runs</p>
+            </div>
+          </div>
+          <hr />
+          <table class="table table-condensed">
+            <tr><td>Go Version</td><td>{{adminDash.health.goVersion}}</td></tr>
+            <tr><td>Heap Sys</td><td>{{adminDash.health.heapSys | binary}}B</td></tr>
+            <tr><td>Stack In-Use</td><td>{{adminDash.health.stackInuse | binary}}B</td></tr>
+            <tr><td>Uptime</td><td>{{adminDash.health.uptime / 1000 | date:'HH:mm:ss':'+0000'}} (hh:mm:ss)</td></tr>
+            <tr><td>Folders</td><td>{{adminDash.health.totalFolders}}</td></tr>
+            <tr><td>Devices</td><td>{{adminDash.health.totalDevices}}</td></tr>
+          </table>
+        </div>
+
+        <!-- Devices tab -->
+        <div ng-if="adminDash.tab === 'devices'">
+          <table class="table table-condensed table-striped">
+            <thead><tr><th>Device ID</th><th>Name</th><th>Paused</th></tr></thead>
+            <tbody>
+              <tr ng-repeat="d in adminDash.devices">
+                <td><small>{{d.deviceId | limitTo:16}}...</small></td>
+                <td>{{d.name}}</td>
+                <td>
+                  <span ng-if="d.paused" class="label label-warning">Paused</span>
+                  <span ng-if="!d.paused" class="label label-success">Active</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p ng-if="adminDash.devices.length === 0" class="text-muted text-center" translate>No devices.</p>
+        </div>
+
+        <!-- Invites tab -->
+        <div ng-if="adminDash.tab === 'invites'">
+          <table class="table table-condensed table-striped" ng-if="adminDash.invites.length > 0">
+            <thead><tr><th>Token</th><th>Role</th><th>Uses</th><th>Expires</th><th></th></tr></thead>
+            <tbody>
+              <tr ng-repeat="inv in adminDash.invites">
+                <td><code>{{inv.token}}</code></td>
+                <td>{{inv.role}}</td>
+                <td>{{inv.used}} / {{inv.maxUses}}</td>
+                <td>{{inv.expiresAt > 0 ? (inv.expiresAt | date:'short') : 'Never'}}</td>
+                <td>
+                  <button class="btn btn-xs btn-danger" ng-click="deleteInviteItem(inv)"><span class="fas fa-trash"></span></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p ng-if="adminDash.invites.length === 0" class="text-muted" translate>No invite links.</p>
+
+          <div class="well well-sm" style="margin-top:8px;">
+            <h6 translate>Create Invite</h6>
+            <div class="row">
+              <div class="col-sm-3">
+                <select class="form-control input-sm" ng-model="adminDash.newInvite.role">
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="col-sm-3">
+                <input type="number" class="form-control input-sm" ng-model="adminDash.newInvite.maxUses" placeholder="Max Uses (1)" />
+              </div>
+              <div class="col-sm-3">
+                <button class="btn btn-success btn-sm btn-block" ng-click="createInvite()">
+                  <span class="fas fa-plus"></span> Create
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <hr />
+          <h6 translate>Bulk Import (CSV)</h6>
+          <p class="text-muted"><small>CSV format: username, password, role, quota</small></p>
+          <input type="file" id="csvImportFile" accept=".csv" />
+          <button class="btn btn-primary btn-sm" ng-click="bulkImportCSV()" style="margin-top:4px;">
+            <span class="fas fa-file-import"></span> Import
+          </button>
+          <span ng-if="adminDash.importResult" class="text-success" style="margin-left:8px;">
+            Created: {{adminDash.importResult.created}}, Failed: {{adminDash.importResult.failed}}
+          </span>
+        </div>
+
+        <!-- Alerts tab -->
+        <div ng-if="adminDash.tab === 'alerts'">
+          <table class="table table-condensed table-striped" ng-if="adminDash.alertRules.length > 0">
+            <thead><tr><th>Metric</th><th>Condition</th><th>Enabled</th><th></th></tr></thead>
+            <tbody>
+              <tr ng-repeat="ar in adminDash.alertRules">
+                <td>{{ar.metric}}</td>
+                <td>{{ar.operator}} {{ar.threshold}}</td>
+                <td>
+                  <span ng-if="ar.enabled" class="text-success fas fa-check"></span>
+                  <span ng-if="!ar.enabled" class="text-muted fas fa-times"></span>
+                </td>
+                <td>
+                  <button class="btn btn-xs btn-danger" ng-click="deleteAlertItem(ar)"><span class="fas fa-trash"></span></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p ng-if="adminDash.alertRules.length === 0" class="text-muted" translate>No alert rules.</p>
+          <div class="well well-sm" style="margin-top:8px;">
+            <h6 translate>Add Alert Rule</h6>
+            <div class="row">
+              <div class="col-sm-3">
+                <select class="form-control input-sm" ng-model="adminDash.newAlert.metric">
+                  <option value="heapAlloc">Heap Alloc</option>
+                  <option value="goroutines">Goroutines</option>
+                  <option value="totalUsed">Total Storage Used</option>
+                  <option value="numGC">GC Runs</option>
+                </select>
+              </div>
+              <div class="col-sm-2">
+                <select class="form-control input-sm" ng-model="adminDash.newAlert.operator">
+                  <option value=">">&gt;</option>
+                  <option value="<">&lt;</option>
+                </select>
+              </div>
+              <div class="col-sm-3">
+                <input type="number" class="form-control input-sm" ng-model="adminDash.newAlert.threshold" placeholder="Threshold" />
+              </div>
+              <div class="col-sm-2">
+                <button class="btn btn-success btn-sm btn-block" ng-click="createAlertRule()">
+                  <span class="fas fa-plus"></span> Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bandwidth tab -->
+        <div ng-if="adminDash.tab === 'bandwidth'">
+          <h5 translate>Global Bandwidth Ceiling</h5>
+          <p class="text-muted"><small translate>Set instance-wide limits. Users cannot exceed these values. 0 = unlimited.</small></p>
+          <div class="row">
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label translate>Max Upload (kbps)</label>
+                <input type="number" class="form-control" ng-model="adminDash.bandwidthCeiling.maxSendKbps" min="0" />
+              </div>
+            </div>
+            <div class="col-sm-4">
+              <div class="form-group">
+                <label translate>Max Download (kbps)</label>
+                <input type="number" class="form-control" ng-model="adminDash.bandwidthCeiling.maxRecvKbps" min="0" />
+              </div>
+            </div>
+            <div class="col-sm-4" style="padding-top:24px;">
+              <button class="btn btn-primary" ng-click="saveBandwidthCeiling()">
+                <span class="fas fa-save"></span> <span translate>Save</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
