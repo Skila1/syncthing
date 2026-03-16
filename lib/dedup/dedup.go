@@ -25,9 +25,9 @@ type DuplicateGroup struct {
 
 // ScanResult holds the output of a deduplication scan.
 type ScanResult struct {
-	Groups      []DuplicateGroup `json:"groups"`
-	TotalWasted int64            `json:"totalWasted"`
-	FilesScanned int             `json:"filesScanned"`
+	Groups       []DuplicateGroup `json:"groups"`
+	TotalWasted  int64            `json:"totalWasted"`
+	FilesScanned int              `json:"filesScanned"`
 }
 
 // ScanForDuplicates walks the given root and identifies files with identical

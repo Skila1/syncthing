@@ -180,10 +180,10 @@ func (m *multiUserAuthMiddleware) passwordAuthHandler(w http.ResponseWriter, r *
 
 func (m *multiUserAuthMiddleware) mfaVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		MFAPending   string `json:"mfaPending"`
-		Code         string `json:"code"`
-		StayLoggedIn bool   `json:"stayLoggedIn"`
-		RememberDevice bool `json:"rememberDevice"`
+		MFAPending     string `json:"mfaPending"`
+		Code           string `json:"code"`
+		StayLoggedIn   bool   `json:"stayLoggedIn"`
+		RememberDevice bool   `json:"rememberDevice"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxLoginRequestSize)).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -305,7 +305,6 @@ func (m *multiUserAuthMiddleware) validateRememberToken(token string, userID int
 	if parts[0] != fmt.Sprintf("%d", userID) {
 		return false
 	}
-	expected := m.generateRememberToken(userID)
 	// The nonce differs, so recompute the signature for the given nonce
 	mac := hmac.New(sha256.New, []byte(m.shortID))
 	mac.Write([]byte(fmt.Sprintf("%d:%s", userID, parts[1])))

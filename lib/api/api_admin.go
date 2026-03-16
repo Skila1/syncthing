@@ -78,13 +78,13 @@ func (s *service) getAdminAnalytics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendJSON(w, map[string]interface{}{
-		"totalUsers":    len(users),
-		"totalUsed":     totalUsed,
-		"totalQuota":    totalQuota,
-		"perUser":       perUser,
-		"totalFolders":  len(s.cfg.Folders()),
-		"totalDevices":  len(s.cfg.Devices()),
-		"generatedAt":   time.Now().UnixMilli(),
+		"totalUsers":   len(users),
+		"totalUsed":    totalUsed,
+		"totalQuota":   totalQuota,
+		"perUser":      perUser,
+		"totalFolders": len(s.cfg.Folders()),
+		"totalDevices": len(s.cfg.Devices()),
+		"generatedAt":  time.Now().UnixMilli(),
 	})
 }
 
@@ -95,18 +95,18 @@ func (s *service) getAdminHealth(w http.ResponseWriter, r *http.Request) {
 	runtime.ReadMemStats(&mem)
 
 	sendJSON(w, map[string]interface{}{
-		"goroutines":    runtime.NumGoroutine(),
-		"heapAlloc":     mem.HeapAlloc,
-		"heapSys":       mem.HeapSys,
-		"heapInuse":     mem.HeapInuse,
-		"stackInuse":    mem.StackInuse,
-		"numGC":         mem.NumGC,
-		"goVersion":     runtime.Version(),
-		"numCPU":        runtime.NumCPU(),
-		"totalFolders":  len(s.cfg.Folders()),
-		"totalDevices":  len(s.cfg.Devices()),
-		"uptime":        time.Since(ur.StartTime).Milliseconds(),
-		"generatedAt":   time.Now().UnixMilli(),
+		"goroutines":   runtime.NumGoroutine(),
+		"heapAlloc":    mem.HeapAlloc,
+		"heapSys":      mem.HeapSys,
+		"heapInuse":    mem.HeapInuse,
+		"stackInuse":   mem.StackInuse,
+		"numGC":        mem.NumGC,
+		"goVersion":    runtime.Version(),
+		"numCPU":       runtime.NumCPU(),
+		"totalFolders": len(s.cfg.Folders()),
+		"totalDevices": len(s.cfg.Devices()),
+		"uptime":       time.Since(ur.StartTime).Milliseconds(),
+		"generatedAt":  time.Now().UnixMilli(),
 	})
 }
 

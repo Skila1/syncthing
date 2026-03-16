@@ -93,10 +93,10 @@ func (s *service) postBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	b := &backup.Backup{
-		UserID:   user.ID,
-		FolderID: req.FolderID,
-		Type:     bType,
-		Status:   backup.StatusRunning,
+		UserID:    user.ID,
+		FolderID:  req.FolderID,
+		Type:      bType,
+		Status:    backup.StatusRunning,
 		StartedAt: time.Now().UnixMilli(),
 	}
 	if err := s.backupStore.CreateBackup(b); err != nil {
@@ -371,9 +371,9 @@ func (s *service) postResolveDuplicates(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req struct {
-		FolderID string           `json:"folderId"`
+		FolderID string               `json:"folderId"`
 		Group    dedup.DuplicateGroup `json:"group"`
-		Action   string           `json:"action"`
+		Action   string               `json:"action"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)

@@ -63,7 +63,7 @@ func (s *UserStore) CreateUser(username, email, passwordHash, role, rootPath str
 func (s *UserStore) GetUser(id int64) (*users.User, error) {
 	var u users.User
 	err := s.db.stmt(`
-		SELECT ` + userColumns + `
+		SELECT `+userColumns+`
 		FROM users WHERE id = ?
 	`).Get(&u, id)
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *UserStore) GetUser(id int64) (*users.User, error) {
 func (s *UserStore) GetUserByUsername(username string) (*users.User, error) {
 	var u users.User
 	err := s.db.stmt(`
-		SELECT ` + userColumns + `
+		SELECT `+userColumns+`
 		FROM users WHERE username = ?
 	`).Get(&u, username)
 	if err != nil {

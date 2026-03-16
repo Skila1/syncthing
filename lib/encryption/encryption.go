@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	SaltSize       = 32
-	KeySize        = 32 // AES-256
-	PBKDF2Iter     = 100000
-	NonceSize      = 12 // GCM nonce
+	SaltSize        = 32
+	KeySize         = 32 // AES-256
+	PBKDF2Iter      = 100000
+	NonceSize       = 12 // GCM nonce
 	EscrowNonceSize = 12
 )
 

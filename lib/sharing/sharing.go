@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	TokenLength     = 32
-	DefaultExpiry   = 7 * 24 * time.Hour
-	MaxExpiryDays   = 90
+	TokenLength   = 32
+	DefaultExpiry = 7 * 24 * time.Hour
+	MaxExpiryDays = 90
 )
 
 var (

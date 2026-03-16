@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	ActionFileCreate  = "file_create"
-	ActionFileModify  = "file_modify"
-	ActionFileDelete  = "file_delete"
-	ActionFileShare   = "file_share"
+	ActionFileCreate   = "file_create"
+	ActionFileModify   = "file_modify"
+	ActionFileDelete   = "file_delete"
+	ActionFileShare    = "file_share"
 	ActionSyncComplete = "sync_complete"
-	ActionUserLogin   = "user_login"
+	ActionUserLogin    = "user_login"
 
 	TypeInfo     = "info"
 	TypeWarning  = "warning"

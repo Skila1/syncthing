@@ -26,9 +26,9 @@ const (
 	StatusActive    = "active"
 	StatusSuspended = "suspended"
 
-	MaxActiveSessions   = 25
-	SessionLifetime     = 7 * 24 * time.Hour
-	SessionTokenLength  = 64
+	MaxActiveSessions  = 25
+	SessionLifetime    = 7 * 24 * time.Hour
+	SessionTokenLength = 64
 
 	QuotaWarningPercent  = 80
 	QuotaCriticalPercent = 95
@@ -129,8 +129,8 @@ type Store interface {
 // Manager coordinates user and session operations with an in-memory session
 // cache for performance.
 type Manager struct {
-	store        Store
-	userDataDir  string
+	store       Store
+	userDataDir string
 
 	mu           sync.RWMutex
 	sessionCache map[string]*cachedSession

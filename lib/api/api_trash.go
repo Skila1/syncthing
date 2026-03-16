@@ -78,7 +78,7 @@ func (s *service) postTrashRestore(w http.ResponseWriter, r *http.Request) {
 
 	user := userFromRequest(r)
 	if s.userManager != nil && user != nil {
-		if err := s.userManager.RecalculateUsage(user.ID, root); err != nil {
+		if _, err := s.userManager.RecalculateUsage(user.ID); err != nil {
 			slog.Error("Failed to recalculate usage after restore", "error", err)
 		}
 	}
@@ -102,7 +102,7 @@ func (s *service) deleteTrashItem(w http.ResponseWriter, r *http.Request) {
 
 	user := userFromRequest(r)
 	if s.userManager != nil && user != nil {
-		if err := s.userManager.RecalculateUsage(user.ID, root); err != nil {
+		if _, err := s.userManager.RecalculateUsage(user.ID); err != nil {
 			slog.Error("Failed to recalculate usage after permanent delete", "error", err)
 		}
 	}
@@ -131,7 +131,7 @@ func (s *service) postTrashEmpty(w http.ResponseWriter, r *http.Request) {
 
 	user := userFromRequest(r)
 	if s.userManager != nil && user != nil {
-		if err := s.userManager.RecalculateUsage(user.ID, root); err != nil {
+		if _, err := s.userManager.RecalculateUsage(user.ID); err != nil {
 			slog.Error("Failed to recalculate usage after empty trash", "error", err)
 		}
 	}

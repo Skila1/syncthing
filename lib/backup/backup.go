@@ -19,10 +19,10 @@ const (
 	TypeFull        = "full"
 	TypeIncremental = "incremental"
 
-	StatusPending    = "pending"
-	StatusRunning    = "running"
-	StatusCompleted  = "completed"
-	StatusFailed     = "failed"
+	StatusPending   = "pending"
+	StatusRunning   = "running"
+	StatusCompleted = "completed"
+	StatusFailed    = "failed"
 )
 
 // Backup represents a backup job record.

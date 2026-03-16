@@ -28,33 +28,33 @@ import (
 	"github.com/syncthing/syncthing/internal/db/sqlite"
 	"github.com/syncthing/syncthing/internal/slogutil"
 	"github.com/syncthing/syncthing/lib/api"
+	"github.com/syncthing/syncthing/lib/audit"
+	"github.com/syncthing/syncthing/lib/backup"
 	"github.com/syncthing/syncthing/lib/build"
+	"github.com/syncthing/syncthing/lib/comments"
 	"github.com/syncthing/syncthing/lib/config"
 	"github.com/syncthing/syncthing/lib/connections"
 	"github.com/syncthing/syncthing/lib/connections/registry"
 	"github.com/syncthing/syncthing/lib/discover"
+	"github.com/syncthing/syncthing/lib/email"
+	"github.com/syncthing/syncthing/lib/encryption"
 	"github.com/syncthing/syncthing/lib/events"
+	"github.com/syncthing/syncthing/lib/groups"
 	"github.com/syncthing/syncthing/lib/locations"
 	"github.com/syncthing/syncthing/lib/model"
+	"github.com/syncthing/syncthing/lib/notifications"
 	"github.com/syncthing/syncthing/lib/osutil"
+	"github.com/syncthing/syncthing/lib/permissions"
 	"github.com/syncthing/syncthing/lib/protocol"
+	"github.com/syncthing/syncthing/lib/provisioning"
+	"github.com/syncthing/syncthing/lib/sharing"
+	"github.com/syncthing/syncthing/lib/storage"
 	"github.com/syncthing/syncthing/lib/svcutil"
+	"github.com/syncthing/syncthing/lib/syncext"
 	"github.com/syncthing/syncthing/lib/tlsutil"
+	"github.com/syncthing/syncthing/lib/trash"
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/ur"
-	"github.com/syncthing/syncthing/lib/permissions"
-	"github.com/syncthing/syncthing/lib/email"
-	"github.com/syncthing/syncthing/lib/audit"
-	"github.com/syncthing/syncthing/lib/backup"
-	"github.com/syncthing/syncthing/lib/comments"
-	"github.com/syncthing/syncthing/lib/encryption"
-	"github.com/syncthing/syncthing/lib/groups"
-	"github.com/syncthing/syncthing/lib/provisioning"
-	"github.com/syncthing/syncthing/lib/storage"
-	"github.com/syncthing/syncthing/lib/notifications"
-	"github.com/syncthing/syncthing/lib/sharing"
-	"github.com/syncthing/syncthing/lib/syncext"
-	"github.com/syncthing/syncthing/lib/trash"
 	"github.com/syncthing/syncthing/lib/users"
 )
 
@@ -76,35 +76,35 @@ type Options struct {
 }
 
 type App struct {
-	myID              protocol.DeviceID
-	mainService       *suture.Supervisor
-	cfg               config.Wrapper
-	sdb               db.DB
-	sqlDB             *sqlite.DB
-	userManager       *users.Manager
-	permManager       *permissions.Manager
-	shareManager      *sharing.Manager
-	cleanupStore      trash.CleanupStore
-	notifManager      *notifications.Manager
-	syncExtStore      syncext.Store
-	auditLogger       *audit.Logger
-	auditStore        audit.Store
+	myID               protocol.DeviceID
+	mainService        *suture.Supervisor
+	cfg                config.Wrapper
+	sdb                db.DB
+	sqlDB              *sqlite.DB
+	userManager        *users.Manager
+	permManager        *permissions.Manager
+	shareManager       *sharing.Manager
+	cleanupStore       trash.CleanupStore
+	notifManager       *notifications.Manager
+	syncExtStore       syncext.Store
+	auditLogger        *audit.Logger
+	auditStore         audit.Store
 	ipRestrictionStore audit.IPRestrictionStore
-	encryptionStore   encryption.Store
-	groupManager      *groups.Manager
-	commentStore      comments.Store
-	provisioningStore provisioning.Store
-	storagePoolStore  storage.Store
-	backupStore       backup.Store
-	evLogger          events.Logger
-	cert              tls.Certificate
-	opts              Options
-	exitStatus        svcutil.ExitStatus
-	err               error
-	stopOnce          sync.Once
-	mainServiceCancel context.CancelFunc
-	stopped           chan struct{}
-	dbService         db.DBService
+	encryptionStore    encryption.Store
+	groupManager       *groups.Manager
+	commentStore       comments.Store
+	provisioningStore  provisioning.Store
+	storagePoolStore   storage.Store
+	backupStore        backup.Store
+	evLogger           events.Logger
+	cert               tls.Certificate
+	opts               Options
+	exitStatus         svcutil.ExitStatus
+	err                error
+	stopOnce           sync.Once
+	mainServiceCancel  context.CancelFunc
+	stopped            chan struct{}
+	dbService          db.DBService
 
 	// Access to internals for direct users of this package. Note that the interface in Internals is unstable!
 	Internals *Internals
@@ -161,14 +161,14 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 	}
 
 	a := &App{
-		cfg:         cfg,
-		sdb:         sdb,
-		sqlDB:       sqlDB,
-		userManager:  userMgr,
-		permManager:  permMgr,
-		shareManager: shareMgr,
-		cleanupStore: cleanupStore,
-		notifManager: notifMgr,
+		cfg:                cfg,
+		sdb:                sdb,
+		sqlDB:              sqlDB,
+		userManager:        userMgr,
+		permManager:        permMgr,
+		shareManager:       shareMgr,
+		cleanupStore:       cleanupStore,
+		notifManager:       notifMgr,
 		syncExtStore:       syncExtSt,
 		auditLogger:        auditLog,
 		auditStore:         auditSt,
@@ -176,13 +176,13 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 		encryptionStore:    encSt,
 		groupManager:       groupMgr,
 		commentStore:       commentSt,
-		provisioningStore: provSt,
-		storagePoolStore:  poolSt,
-		backupStore:       backupSt,
+		provisioningStore:  provSt,
+		storagePoolStore:   poolSt,
+		backupStore:        backupSt,
 		evLogger:           evLogger,
-		opts:        opts,
-		cert:        cert,
-		stopped:     make(chan struct{}),
+		opts:               opts,
+		cert:               cert,
+		stopped:            make(chan struct{}),
 	}
 	close(a.stopped) // Hasn't been started, so shouldn't block on Wait.
 	return a, nil

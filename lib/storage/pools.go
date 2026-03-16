@@ -18,7 +18,7 @@ const (
 	StatusDegraded = "degraded"
 	StatusOffline  = "offline"
 
-	StrategyManual    = "manual"
+	StrategyManual     = "manual"
 	StrategyRoundRobin = "round-robin"
 	StrategyFillFirst  = "fill-first"
 )

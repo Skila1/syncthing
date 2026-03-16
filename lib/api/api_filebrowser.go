@@ -252,7 +252,7 @@ func (s *service) postFileUpload(w http.ResponseWriter, r *http.Request) {
 
 			// Update used bytes after successful write
 			if s.userManager != nil && user != nil {
-				if err := s.userManager.RecalculateUsage(user.ID, root); err != nil {
+				if _, err := s.userManager.RecalculateUsage(user.ID); err != nil {
 					slog.Error("Failed to recalculate usage after upload", "error", err)
 				}
 			}
@@ -344,7 +344,7 @@ func (s *service) deleteFile(w http.ResponseWriter, r *http.Request) {
 		s.notifManager.RecordActivity(user.ID, folderID, notifications.ActionFileDelete, filepath.ToSlash(clean), "")
 	}
 	if s.userManager != nil && user != nil {
-		if err := s.userManager.RecalculateUsage(user.ID, root); err != nil {
+		if _, err := s.userManager.RecalculateUsage(user.ID); err != nil {
 			slog.Error("Failed to recalculate usage after delete", "error", err)
 		}
 	}
@@ -378,8 +378,8 @@ func (s *service) getFileSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type folderResult struct {
-		FolderID    string                `json:"folderId"`
-		FolderLabel string                `json:"folderLabel"`
+		FolderID    string                  `json:"folderId"`
+		FolderLabel string                  `json:"folderLabel"`
 		Results     []filebrowser.FileEntry `json:"results"`
 	}
 

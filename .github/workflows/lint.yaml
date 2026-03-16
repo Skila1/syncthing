@@ -26,10 +26,16 @@ jobs:
       - name: Install build deps (CGO/SQLite)
         run: sudo apt-get update && sudo apt-get install -y gcc libsqlite3-dev
 
+      - name: Generate GUI assets
+        run: go run build.go assets
+        env:
+          CGO_ENABLED: "1"
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+          args: --build-tags "sqlite_omit_load_extension sqlite_dbstat"
         env:
           CGO_ENABLED: "1"
 
@@ -47,6 +53,11 @@ jobs:
 
       - name: Install build deps (CGO/SQLite)
         run: sudo apt-get update && sudo apt-get install -y gcc libsqlite3-dev
+
+      - name: Generate GUI assets
+        run: go run build.go assets
+        env:
+          CGO_ENABLED: "1"
 
       - name: go vet
         run: go vet -tags "sqlite_omit_load_extension sqlite_dbstat" ./...
