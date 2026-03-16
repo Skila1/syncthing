@@ -176,4 +176,3 @@ func isForwardedHTTPS(r *http.Request) bool {
 	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") ||
 		strings.Contains(strings.ToLower(r.Header.Get("Forwarded")), "proto=https")
 }
-
