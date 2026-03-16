@@ -28,10 +28,10 @@ Multi-user authentication, per-user isolated storage roots, role-based access (a
 
 Admin-controlled storage quotas per user with real-time usage tracking.
 
-- [ ] Quota enforcement in sync engine and uploads
-- [ ] Per-user disk usage calculation
-- [ ] Warning thresholds (80%, 95%)
-- [ ] Admin + user storage dashboards
+- [x] Quota enforcement in sync engine and uploads
+- [x] Per-user disk usage calculation
+- [x] Warning thresholds (80%, 95%)
+- [x] Admin + user storage dashboards
 
 ### Step 3: Password Reset & MFA/2FA
 
