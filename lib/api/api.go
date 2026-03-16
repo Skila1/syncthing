@@ -59,6 +59,7 @@ import (
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/permissions"
 	"github.com/syncthing/syncthing/lib/sharing"
+	"github.com/syncthing/syncthing/lib/trash"
 	"github.com/syncthing/syncthing/lib/ur"
 	"github.com/syncthing/syncthing/lib/users"
 )
@@ -90,6 +91,7 @@ type service struct {
 	userManager          *users.Manager
 	permManager          *permissions.Manager
 	shareManager         *sharing.Manager
+	cleanupStore         trash.CleanupStore
 	noUpgrade            bool
 	tlsDefaultCommonName string
 	configChanged        chan struct{} // signals intentional listener close due to config change
@@ -113,7 +115,7 @@ type Service interface {
 	WaitForStart() error
 }
 
-func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager, permManager *permissions.Manager, shareManager *sharing.Manager) Service {
+func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager, permManager *permissions.Manager, shareManager *sharing.Manager, cleanupStore trash.CleanupStore) Service {
 	return &service{
 		id:      id,
 		cfg:     cfg,
@@ -131,6 +133,7 @@ func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonNam
 		userManager:          userManager,
 		permManager:          permManager,
 		shareManager:         shareManager,
+		cleanupStore:         cleanupStore,
 		guiErrors:            errors,
 		systemLog:            systemLog,
 		noUpgrade:            noUpgrade,
@@ -405,6 +408,7 @@ func (s *service) Serve(ctx context.Context) error {
 			restMux.Handler(http.MethodPost, "/rest/noauth/share/:token", http.HandlerFunc(s.postShareDownload))
 		}
 		s.registerFileBrowserEndpoints(restMux)
+		s.registerTrashEndpoints(restMux)
 	} else if guiCfg.IsAuthEnabled() {
 		tokenCookieManager := newTokenCookieManager(s.id.Short().String(), guiCfg, s.evLogger, s.miscDB)
 		authMW := newBasicAuthAndSessionMiddleware(tokenCookieManager, guiCfg, s.cfg.LDAP(), handler, s.evLogger)

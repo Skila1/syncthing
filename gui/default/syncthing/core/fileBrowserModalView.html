@@ -26,10 +26,13 @@
             </div>
           </div>
           <div class="col-sm-7 text-right">
-            <button class="btn btn-default btn-sm" ng-click="showNewFolderInput()">
+            <button class="btn btn-sm" ng-class="fileBrowser.tab === 'trash' ? 'btn-warning' : 'btn-default'" ng-click="toggleTrashView()">
+              <span class="fas fa-trash"></span> <span translate>Trash</span>
+            </button>
+            <button class="btn btn-default btn-sm" ng-click="showNewFolderInput()" ng-if="fileBrowser.tab !== 'trash'">
               <span class="fas fa-folder-plus"></span> <span translate>New Folder</span>
             </button>
-            <label class="btn btn-primary btn-sm" style="margin-bottom:0;">
+            <label class="btn btn-primary btn-sm" style="margin-bottom:0;" ng-if="fileBrowser.tab !== 'trash'">
               <span class="fas fa-upload"></span> <span translate>Upload Files</span>
               <input type="file" multiple style="display:none;" onchange="angular.element(this).scope().uploadFiles(this.files)" />
             </label>
@@ -148,6 +151,9 @@
                     {{entry.modTime | date:'short'}}
                   </td>
                   <td class="text-right">
+                    <button ng-if="!entry.isDir" class="btn btn-xs btn-default" ng-click="showVersionHistory(entry)" title="History">
+                      <span class="fas fa-history"></span>
+                    </button>
                     <a ng-if="!entry.isDir" ng-href="{{urlbase}}/files/download?folder={{fileBrowser.folderId}}&path={{entry.path}}" target="_blank" class="btn btn-xs btn-default" title="Download">
                       <span class="fas fa-download"></span>
                     </a>
@@ -169,6 +175,95 @@
           <button class="btn btn-sm btn-default" style="margin-top:8px;" ng-click="fileBrowser.preview = null">
             <span class="fas fa-times"></span> <span translate>Close Preview</span>
           </button>
+        </div>
+
+        <!-- Trash view -->
+        <div ng-if="fileBrowser.tab === 'trash'">
+          <div class="row" style="margin-bottom:8px;">
+            <div class="col-sm-6">
+              <h5><span class="fas fa-trash"></span> <span translate>Trash</span></h5>
+            </div>
+            <div class="col-sm-6 text-right">
+              <button class="btn btn-xs btn-danger" ng-click="emptyTrash()" ng-if="fileBrowser.trashEntries.length > 0">
+                <span class="fas fa-trash-alt"></span> <span translate>Empty Trash</span>
+              </button>
+            </div>
+          </div>
+
+          <div ng-if="fileBrowser.trashEntries.length === 0" class="text-muted text-center" style="padding:40px;">
+            <span class="fas fa-check-circle fa-3x text-success"></span>
+            <p translate style="margin-top:12px;">Trash is empty.</p>
+          </div>
+
+          <table class="table table-condensed table-hover" ng-if="fileBrowser.trashEntries.length > 0">
+            <thead>
+              <tr>
+                <th style="width:30px;"></th>
+                <th translate>Original Path</th>
+                <th translate style="width:120px;">Size</th>
+                <th translate style="width:180px;">Deleted</th>
+                <th style="width:140px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat="item in fileBrowser.trashEntries">
+                <td>
+                  <span ng-if="item.isDir" class="fas fa-folder text-warning"></span>
+                  <span ng-if="!item.isDir" class="fas fa-file text-muted"></span>
+                </td>
+                <td>{{item.originalPath}}</td>
+                <td>{{item.size | binary}}B</td>
+                <td>{{item.deletedAt | date:'short'}}</td>
+                <td class="text-right">
+                  <button class="btn btn-xs btn-success" ng-click="restoreTrashItem(item)">
+                    <span class="fas fa-undo"></span> <span translate>Restore</span>
+                  </button>
+                  <button class="btn btn-xs btn-danger" ng-click="permanentDeleteTrashItem(item)">
+                    <span class="fas fa-times"></span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Version history panel -->
+        <div ng-if="fileBrowser.versionHistory" class="panel panel-info" style="margin-top:12px;">
+          <div class="panel-heading">
+            <span class="fas fa-history"></span>
+            <span translate>Version History</span> &mdash; {{fileBrowser.versionHistory.name}}
+            <button class="close" ng-click="fileBrowser.versionHistory = null"><span>&times;</span></button>
+          </div>
+          <div class="panel-body">
+            <div ng-if="fileBrowser.versions.length === 0" class="text-muted">
+              <p translate>No previous versions found.</p>
+            </div>
+            <table class="table table-condensed" ng-if="fileBrowser.versions.length > 0">
+              <thead>
+                <tr>
+                  <th translate>Version</th>
+                  <th translate>Size</th>
+                  <th translate>Date</th>
+                  <th style="width:140px;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="ver in fileBrowser.versions">
+                  <td>{{ver.version}}</td>
+                  <td>{{ver.size | binary}}B</td>
+                  <td>{{ver.modTime | date:'short'}}</td>
+                  <td class="text-right">
+                    <a ng-href="{{urlbase}}/versions/download?folder={{fileBrowser.folderId}}&path={{fileBrowser.versionHistory.path}}&version={{ver.version}}" target="_blank" class="btn btn-xs btn-default">
+                      <span class="fas fa-download"></span>
+                    </a>
+                    <button class="btn btn-xs btn-success" ng-click="restoreVersion(ver)">
+                      <span class="fas fa-undo"></span> <span translate>Restore</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>

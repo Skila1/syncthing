@@ -19,6 +19,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/syncthing/syncthing/lib/filebrowser"
+	"github.com/syncthing/syncthing/lib/trash"
 )
 
 func (s *service) registerFileBrowserEndpoints(mux *httprouter.Router) {
@@ -325,7 +326,7 @@ func (s *service) deleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := os.RemoveAll(fullPath); err != nil {
+	if _, err := trash.MoveToTrash(root, clean); err != nil {
 		http.Error(w, "Failed to delete: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

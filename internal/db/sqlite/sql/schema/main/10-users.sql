@@ -105,3 +105,16 @@ CREATE INDEX IF NOT EXISTS share_links_token ON share_links (token)
 ;
 CREATE INDEX IF NOT EXISTS share_links_user ON share_links (user_id)
 ;
+
+CREATE TABLE IF NOT EXISTS cleanup_policies (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    max_age_days INTEGER NOT NULL DEFAULT 30,
+    max_size_bytes INTEGER NOT NULL DEFAULT 0, -- 0 = unlimited
+    pattern TEXT NOT NULL DEFAULT '' COLLATE BINARY, -- glob pattern, empty = all
+    enabled INTEGER NOT NULL DEFAULT 1,
+    UNIQUE(user_id, pattern)
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS cleanup_policies_user ON cleanup_policies (user_id)
+;

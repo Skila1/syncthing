@@ -133,22 +133,22 @@ Web-based file management: browse, upload, download, search.
 
 ## Step 7: Trash, Version History & Cleanup Policies
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 3-4 hours
 **Depends on:** Step 1, Step 6
 
 Soft deletes, file versioning, and automatic cleanup.
 
-- [ ] Per-user trash folder (`.trash/` inside user root)
-- [ ] Move-to-trash on delete instead of permanent removal
-- [ ] Trash retention period (configurable, default 30 days)
-- [ ] Extend existing `VersioningConfiguration` for per-user version history
-- [ ] `cleanup_policies` table: id, user_id, max_age_days, max_size_bytes, pattern, enabled
-- [ ] Cleanup scheduler (background goroutine, configurable interval)
-- [ ] GUI: trash browser (list, restore, permanent delete)
-- [ ] GUI: file version history dialog (timeline, restore)
-- [ ] GUI: cleanup policy editor (admin defaults + per-user overrides)
-- [ ] API endpoints: `GET /rest/trash`, `POST /rest/trash/:id/restore`, `GET/POST /rest/cleanup-policies`
+- [x] Per-user trash folder (`.sttrash/` inside folder root)
+- [x] Move-to-trash on delete instead of permanent removal
+- [x] Trash retention period (configurable, default 30 days)
+- [x] Per-file version history (`.stversions/` directory, max 20 versions per file)
+- [x] `cleanup_policies` table: id, user_id, max_age_days, max_size_bytes, pattern, enabled
+- [x] Cleanup scheduler (background goroutine, 6-hour interval)
+- [x] GUI: trash browser (list, restore, permanent delete, empty trash)
+- [x] GUI: file version history dialog (timeline, restore, download)
+- [x] GUI: cleanup policy editor (add/delete policies per user)
+- [x] API endpoints: `GET /rest/trash`, `POST /rest/trash/restore`, `DELETE /rest/trash/item`, `POST /rest/trash/empty`, `GET /rest/versions`, `POST /rest/versions/restore`, `GET/POST /rest/cleanup-policies`
 
 ---
 

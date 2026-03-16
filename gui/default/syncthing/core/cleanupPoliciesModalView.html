@@ -1,0 +1,71 @@
+<div id="cleanupPoliciesModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-broom"></span>
+          <span translate>Cleanup Policies</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" translate>Configure automatic cleanup of trash and old files. Items older than the specified age will be permanently deleted.</p>
+
+        <!-- Existing policies -->
+        <table class="table table-condensed table-striped" ng-if="cleanupPolicies.list.length > 0">
+          <thead>
+            <tr>
+              <th translate>Max Age (days)</th>
+              <th translate>Max Size</th>
+              <th translate>Pattern</th>
+              <th translate>Enabled</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="policy in cleanupPolicies.list">
+              <td>{{policy.maxAgeDays}}</td>
+              <td>
+                <span ng-if="policy.maxSizeBytes > 0">{{policy.maxSizeBytes | binary}}B</span>
+                <span ng-if="policy.maxSizeBytes == 0" translate>Unlimited</span>
+              </td>
+              <td>{{policy.pattern || '(all files)'}}</td>
+              <td>
+                <span ng-if="policy.enabled" class="text-success fas fa-check"></span>
+                <span ng-if="!policy.enabled" class="text-muted fas fa-times"></span>
+              </td>
+              <td>
+                <button class="btn btn-xs btn-danger" ng-click="deleteCleanupPolicy(policy)">
+                  <span class="fas fa-trash"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div ng-if="cleanupPolicies.list.length === 0" class="text-muted text-center" style="padding:20px;">
+          <p translate>No cleanup policies configured. Trash items will be kept for 30 days by default.</p>
+        </div>
+
+        <hr />
+        <h5 translate>Add Policy</h5>
+        <form class="form-inline" style="margin-top:8px;">
+          <div class="form-group" style="margin-right:8px;">
+            <label translate>Max Age (days)</label>
+            <input type="number" class="form-control" ng-model="cleanupPolicies.newPolicy.maxAgeDays" min="1" style="width:80px;" />
+          </div>
+          <div class="form-group" style="margin-right:8px;">
+            <label translate>Pattern</label>
+            <input type="text" class="form-control" ng-model="cleanupPolicies.newPolicy.pattern" placeholder="e.g. *.log" style="width:120px;" />
+          </div>
+          <button class="btn btn-success btn-sm" ng-click="addCleanupPolicy()">
+            <span class="fas fa-plus"></span> <span translate>Add</span>
+          </button>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

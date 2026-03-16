@@ -1249,6 +1249,115 @@ angular.module('syncthing.core')
             $scope.fileBrowser.searchQuery = '';
         };
 
+        // --- Trash ---
+
+        $scope.fileBrowser.tab = 'files';
+        $scope.fileBrowser.trashEntries = [];
+        $scope.fileBrowser.versionHistory = null;
+        $scope.fileBrowser.versions = [];
+
+        $scope.toggleTrashView = function () {
+            if ($scope.fileBrowser.tab === 'trash') {
+                $scope.fileBrowser.tab = 'files';
+            } else {
+                $scope.fileBrowser.tab = 'trash';
+                $scope.refreshTrash();
+            }
+        };
+
+        $scope.refreshTrash = function () {
+            $http.get(urlbase + '/trash', {
+                params: { folder: $scope.fileBrowser.folderId }
+            }).success(function (data) {
+                $scope.fileBrowser.trashEntries = data || [];
+            });
+        };
+
+        $scope.restoreTrashItem = function (item) {
+            $http.post(urlbase + '/trash/restore', {
+                folderId: $scope.fileBrowser.folderId,
+                trashId: item.id
+            }).success(function () {
+                $scope.refreshTrash();
+                $scope.refreshFileBrowser();
+            });
+        };
+
+        $scope.permanentDeleteTrashItem = function (item) {
+            if (!confirm('Permanently delete "' + item.originalPath + '"? This cannot be undone.')) return;
+            $http.delete(urlbase + '/trash/item', {
+                params: { folder: $scope.fileBrowser.folderId, id: item.id }
+            }).success(function () {
+                $scope.refreshTrash();
+            });
+        };
+
+        $scope.emptyTrash = function () {
+            if (!confirm('Permanently delete all trash items? This cannot be undone.')) return;
+            $http.post(urlbase + '/trash/empty', {
+                folderId: $scope.fileBrowser.folderId
+            }).success(function () {
+                $scope.refreshTrash();
+            });
+        };
+
+        // --- Version History ---
+
+        $scope.showVersionHistory = function (entry) {
+            $scope.fileBrowser.versionHistory = entry;
+            $http.get(urlbase + '/versions', {
+                params: { folder: $scope.fileBrowser.folderId, path: entry.path }
+            }).success(function (data) {
+                $scope.fileBrowser.versions = data || [];
+            });
+        };
+
+        $scope.restoreVersion = function (ver) {
+            $http.post(urlbase + '/versions/restore', {
+                folderId: $scope.fileBrowser.folderId,
+                path: $scope.fileBrowser.versionHistory.path,
+                version: ver.version
+            }).success(function () {
+                $scope.refreshFileBrowser();
+                $scope.showVersionHistory($scope.fileBrowser.versionHistory);
+            });
+        };
+
+        // --- Cleanup Policies ---
+
+        $scope.cleanupPolicies = {
+            list: [],
+            newPolicy: { maxAgeDays: 30, pattern: '' }
+        };
+
+        $scope.showCleanupPolicies = function () {
+            $scope.refreshCleanupPolicies();
+            $('#cleanupPoliciesModal').modal('show');
+        };
+
+        $scope.refreshCleanupPolicies = function () {
+            $http.get(urlbase + '/cleanup-policies').success(function (data) {
+                $scope.cleanupPolicies.list = data || [];
+            });
+        };
+
+        $scope.addCleanupPolicy = function () {
+            $http.post(urlbase + '/cleanup-policies', {
+                maxAgeDays: $scope.cleanupPolicies.newPolicy.maxAgeDays || 30,
+                pattern: $scope.cleanupPolicies.newPolicy.pattern || '',
+                enabled: true
+            }).success(function () {
+                $scope.cleanupPolicies.newPolicy = { maxAgeDays: 30, pattern: '' };
+                $scope.refreshCleanupPolicies();
+            });
+        };
+
+        $scope.deleteCleanupPolicy = function (policy) {
+            $http.delete(urlbase + '/cleanup-policies/' + policy.id).success(function () {
+                $scope.refreshCleanupPolicies();
+            });
+        };
+
         function refreshNoAuthWarning() {
             if (!$scope.system || !$scope.config || !$scope.config.gui) {
                 // We need all to be able to determine the state.

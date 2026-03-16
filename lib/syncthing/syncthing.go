@@ -44,6 +44,7 @@ import (
 	"github.com/syncthing/syncthing/lib/ur"
 	"github.com/syncthing/syncthing/lib/permissions"
 	"github.com/syncthing/syncthing/lib/sharing"
+	"github.com/syncthing/syncthing/lib/trash"
 	"github.com/syncthing/syncthing/lib/users"
 )
 
@@ -73,6 +74,7 @@ type App struct {
 	userManager       *users.Manager
 	permManager       *permissions.Manager
 	shareManager      *sharing.Manager
+	cleanupStore      trash.CleanupStore
 	evLogger          events.Logger
 	cert              tls.Certificate
 	opts              Options
@@ -102,6 +104,8 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 	shareStore := sqlite.NewShareStore(sqlDB)
 	shareMgr := sharing.NewManager(shareStore)
 
+	cleanupStore := sqlite.NewCleanupStore(sqlDB)
+
 	adminUser := os.Getenv("ST_ADMIN_USER")
 	if adminUser == "" {
 		adminUser = "admin"
@@ -124,6 +128,7 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 		userManager:  userMgr,
 		permManager:  permMgr,
 		shareManager: shareMgr,
+		cleanupStore: cleanupStore,
 		evLogger:    evLogger,
 		opts:        opts,
 		cert:        cert,
@@ -457,13 +462,53 @@ func (a *App) setupGUI(m model.Model, defaultSub, diskSub events.BufferedSubscri
 	summaryService := model.NewFolderSummaryService(a.cfg, m, a.myID, a.evLogger)
 	a.mainService.Add(summaryService)
 
-	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager)
+	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager, a.cleanupStore)
 	a.mainService.Add(apiSvc)
 
 	if err := apiSvc.WaitForStart(); err != nil {
 		return err
 	}
+
+	go a.runTrashCleanupLoop()
+
 	return nil
+}
+
+// runTrashCleanupLoop periodically cleans expired trash items across all folders.
+func (a *App) runTrashCleanupLoop() {
+	ticker := time.NewTicker(6 * time.Hour)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		a.cleanTrashAndVersions()
+	}
+}
+
+func (a *App) cleanTrashAndVersions() {
+	retention := trash.DefaultRetention
+
+	if a.cleanupStore != nil {
+		policies, err := a.cleanupStore.GetAllCleanupPolicies()
+		if err == nil {
+			for _, p := range policies {
+				if p.Enabled && p.MaxAgeDays > 0 {
+					d := time.Duration(p.MaxAgeDays) * 24 * time.Hour
+					if d < retention {
+						retention = d
+					}
+				}
+			}
+		}
+	}
+
+	for _, folder := range a.cfg.FolderList() {
+		cleaned, err := trash.CleanExpiredTrash(folder.Path, retention)
+		if err != nil {
+			slog.Error("Trash cleanup error", "folder", folder.ID, "error", err)
+		} else if cleaned > 0 {
+			slog.Info("Cleaned expired trash items", "folder", folder.ID, "count", cleaned)
+		}
+	}
 }
 
 // checkShortIDs verifies that the configuration won't result in duplicate

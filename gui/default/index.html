@@ -124,6 +124,7 @@
               <li ng-if="isAdmin()" class="divider" aria-hidden="true"></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showUserManagement()"><span class="fa fa-fw fa-users"></span>&nbsp;<span translate>User Management</span></a></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showAdminShareLinks()"><span class="fa fa-fw fa-link"></span>&nbsp;<span translate>Share Links</span></a></li>
+              <li ng-if="currentUser"><a href="" ng-click="showCleanupPolicies()"><span class="fa fa-fw fa-broom"></span>&nbsp;<span translate>Cleanup Policies</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="startMFAEnroll()" ng-if="!currentUser.mfaEnabled"><span class="fa fa-fw fa-lock"></span>&nbsp;<span translate>Enable Two-Factor Auth</span></a></li>
               <li ng-if="currentUser && currentUser.mfaEnabled"><a href="" ng-click="disableMFA()"><span class="fa fa-fw fa-unlock"></span>&nbsp;<span translate>Disable Two-Factor Auth</span></a></li>
               <li class="divider" aria-hidden="true"></li>
@@ -1165,6 +1166,7 @@
   <ng-include ng-if="currentUser" src="'syncthing/core/shareLinkModalView.html'"></ng-include>
   <ng-include ng-if="isAdmin()" src="'syncthing/admin/shareLinksManagementView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/fileBrowserModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/cleanupPoliciesModalView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>
