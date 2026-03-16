@@ -154,20 +154,21 @@ Soft deletes, file versioning, and automatic cleanup.
 
 ## Step 8: Activity Feed & Notifications
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 3-4 hours
 **Depends on:** Step 1
 
 User-scoped activity tracking and change notifications.
 
-- [ ] `notifications` table: id, user_id, type, message, read, created_at
-- [ ] Extend Syncthing event system (`lib/events/`) with user-scoped event types
-- [ ] Activity feed backend -- record file create/modify/delete/share/sync events per user
-- [ ] Notification dispatch (`lib/notifications/`) -- in-app and optional email (SMTP)
-- [ ] Notification preferences per user per folder (all changes, deletions only, new files only)
-- [ ] GUI: activity feed view (filterable by folder, action, date range)
-- [ ] GUI: notifications panel (bell icon, list, mark read)
-- [ ] API endpoints: `GET /rest/activity`, `GET /rest/notifications`, `PUT /rest/notifications/:id/read`
+- [x] `activity_log`, `notifications`, `notification_prefs` tables with indexes
+- [x] User-scoped event types: file_create, file_modify, file_delete, file_share, sync_complete, user_login
+- [x] Activity feed backend -- record file create/delete events per user (integrated into file browser)
+- [x] Notification dispatch (`lib/notifications/`) -- in-app and optional email (SMTP via `lib/email/`)
+- [x] Notification preferences per user per folder (configurable: create, modify, delete, share, email)
+- [x] GUI: activity feed view (filterable by folder and action, paginated)
+- [x] GUI: notifications panel (bell icon with unread badge, list, mark read, mark all read)
+- [x] GUI: notification settings modal (per-folder preference editor)
+- [x] API endpoints: `GET /rest/activity`, `GET /rest/notifications`, `GET /rest/notifications/count`, `PUT /rest/notifications/:id/read`, `POST /rest/notifications/read-all`, `GET/POST /rest/notification-prefs`, `DELETE /rest/notification-prefs/:id`
 
 ---
 

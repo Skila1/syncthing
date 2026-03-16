@@ -1,0 +1,111 @@
+<div id="notificationsPanelModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-bell"></span>
+          <span translate>Notifications</span>
+          <span ng-if="notifPanel.unreadCount > 0" class="badge" style="background:#d9534f;">{{notifPanel.unreadCount}}</span>
+        </h4>
+      </div>
+      <div class="modal-body" style="max-height:500px; overflow-y:auto;">
+        <div ng-if="notifPanel.loading" class="text-center" style="padding:30px;">
+          <span class="fas fa-spinner fa-spin fa-2x"></span>
+        </div>
+
+        <div ng-if="!notifPanel.loading && notifPanel.items.length === 0" class="text-muted text-center" style="padding:30px;">
+          <span class="fas fa-check-circle fa-3x text-success"></span>
+          <p translate style="margin-top:12px;">No notifications.</p>
+        </div>
+
+        <div ng-repeat="n in notifPanel.items" class="panel" ng-class="{'panel-default': n.read, 'panel-info': !n.read && n.type === 'info', 'panel-warning': !n.read && n.type === 'warning', 'panel-danger': !n.read && n.type === 'error', 'panel-success': !n.read && n.type === 'activity'}" style="margin-bottom:8px;">
+          <div class="panel-body" style="padding:8px 12px;">
+            <div class="pull-right">
+              <small class="text-muted">{{n.createdAt | date:'short'}}</small>
+              <button ng-if="!n.read" class="btn btn-xs btn-default" ng-click="markNotificationRead(n)" style="margin-left:4px;">
+                <span class="fas fa-check"></span>
+              </button>
+            </div>
+            <strong>{{n.title}}</strong>
+            <p style="margin:2px 0 0 0;"><small>{{n.message}}</small></p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" ng-click="markAllNotificationsRead()" ng-if="notifPanel.unreadCount > 0">
+          <span class="fas fa-check-double"></span> <span translate>Mark All Read</span>
+        </button>
+        <button class="btn btn-default" ng-click="showNotificationSettings()">
+          <span class="fas fa-cog"></span> <span translate>Settings</span>
+        </button>
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Settings Sub-Modal -->
+<div id="notificationSettingsModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-cog"></span> <span translate>Notification Settings</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" translate>Configure which events generate notifications.</p>
+
+        <table class="table table-condensed" ng-if="notifPrefs.list.length > 0">
+          <thead>
+            <tr>
+              <th translate>Folder</th>
+              <th translate>Create</th>
+              <th translate>Modify</th>
+              <th translate>Delete</th>
+              <th translate>Share</th>
+              <th translate>Email</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="pref in notifPrefs.list">
+              <td>{{pref.folderId || '(Default)'}}</td>
+              <td><input type="checkbox" ng-model="pref.notifyCreate" ng-change="saveNotifPref(pref)" /></td>
+              <td><input type="checkbox" ng-model="pref.notifyModify" ng-change="saveNotifPref(pref)" /></td>
+              <td><input type="checkbox" ng-model="pref.notifyDelete" ng-change="saveNotifPref(pref)" /></td>
+              <td><input type="checkbox" ng-model="pref.notifyShare" ng-change="saveNotifPref(pref)" /></td>
+              <td><input type="checkbox" ng-model="pref.notifyEmail" ng-change="saveNotifPref(pref)" /></td>
+              <td>
+                <button class="btn btn-xs btn-danger" ng-click="deleteNotifPref(pref)">
+                  <span class="fas fa-trash"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div ng-if="notifPrefs.list.length === 0" class="text-muted" style="padding:12px;">
+          <p translate>No notification preferences configured. Default behavior: notify on file create, delete, and share.</p>
+        </div>
+
+        <hr />
+        <h5 translate>Add Preference</h5>
+        <div class="form-inline" style="margin-top:8px;">
+          <select class="form-control input-sm" ng-model="notifPrefs.newFolderId" style="margin-right:8px;">
+            <option value="">Default (all folders)</option>
+            <option ng-repeat="folder in folders" value="{{folder.id}}">{{folder.label || folder.id}}</option>
+          </select>
+          <button class="btn btn-success btn-sm" ng-click="addNotifPref()">
+            <span class="fas fa-plus"></span> <span translate>Add</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

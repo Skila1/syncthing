@@ -43,6 +43,8 @@ import (
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/ur"
 	"github.com/syncthing/syncthing/lib/permissions"
+	"github.com/syncthing/syncthing/lib/email"
+	"github.com/syncthing/syncthing/lib/notifications"
 	"github.com/syncthing/syncthing/lib/sharing"
 	"github.com/syncthing/syncthing/lib/trash"
 	"github.com/syncthing/syncthing/lib/users"
@@ -75,6 +77,7 @@ type App struct {
 	permManager       *permissions.Manager
 	shareManager      *sharing.Manager
 	cleanupStore      trash.CleanupStore
+	notifManager      *notifications.Manager
 	evLogger          events.Logger
 	cert              tls.Certificate
 	opts              Options
@@ -106,6 +109,10 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 
 	cleanupStore := sqlite.NewCleanupStore(sqlDB)
 
+	notifStore := sqlite.NewNotificationStore(sqlDB)
+	smtpCfg := email.LoadSMTPConfig()
+	notifMgr := notifications.NewManager(notifStore, smtpCfg)
+
 	adminUser := os.Getenv("ST_ADMIN_USER")
 	if adminUser == "" {
 		adminUser = "admin"
@@ -129,6 +136,7 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 		permManager:  permMgr,
 		shareManager: shareMgr,
 		cleanupStore: cleanupStore,
+		notifManager: notifMgr,
 		evLogger:    evLogger,
 		opts:        opts,
 		cert:        cert,
@@ -462,7 +470,7 @@ func (a *App) setupGUI(m model.Model, defaultSub, diskSub events.BufferedSubscri
 	summaryService := model.NewFolderSummaryService(a.cfg, m, a.myID, a.evLogger)
 	a.mainService.Add(summaryService)
 
-	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager, a.cleanupStore)
+	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager, a.cleanupStore, a.notifManager)
 	a.mainService.Add(apiSvc)
 
 	if err := apiSvc.WaitForStart(); err != nil {

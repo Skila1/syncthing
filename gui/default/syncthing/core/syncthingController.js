@@ -1358,6 +1358,149 @@ angular.module('syncthing.core')
             });
         };
 
+        // --- Activity Feed ---
+
+        $scope.activityFeed = {
+            entries: [],
+            loading: false,
+            filterFolder: '',
+            filterAction: '',
+            limit: 50,
+            offset: 0
+        };
+
+        $scope.showActivityFeed = function () {
+            $scope.activityFeed.offset = 0;
+            $scope.activityFeed.entries = [];
+            $scope.refreshActivity();
+            $('#activityFeedModal').modal('show');
+        };
+
+        $scope.refreshActivity = function () {
+            $scope.activityFeed.loading = true;
+            $scope.activityFeed.offset = 0;
+            $http.get(urlbase + '/activity', {
+                params: {
+                    folder: $scope.activityFeed.filterFolder,
+                    action: $scope.activityFeed.filterAction,
+                    limit: $scope.activityFeed.limit,
+                    offset: 0
+                }
+            }).success(function (data) {
+                $scope.activityFeed.entries = data || [];
+                $scope.activityFeed.loading = false;
+            }).error(function () {
+                $scope.activityFeed.loading = false;
+            });
+        };
+
+        $scope.loadMoreActivity = function () {
+            $scope.activityFeed.offset += $scope.activityFeed.limit;
+            $http.get(urlbase + '/activity', {
+                params: {
+                    folder: $scope.activityFeed.filterFolder,
+                    action: $scope.activityFeed.filterAction,
+                    limit: $scope.activityFeed.limit,
+                    offset: $scope.activityFeed.offset
+                }
+            }).success(function (data) {
+                $scope.activityFeed.entries = $scope.activityFeed.entries.concat(data || []);
+            });
+        };
+
+        // --- Notifications ---
+
+        $scope.notifPanel = {
+            items: [],
+            unreadCount: 0,
+            loading: false
+        };
+
+        $scope.notifPrefs = {
+            list: [],
+            newFolderId: ''
+        };
+
+        $scope.showNotificationsPanel = function () {
+            $scope.refreshNotifications();
+            $('#notificationsPanelModal').modal('show');
+        };
+
+        $scope.refreshNotifications = function () {
+            $scope.notifPanel.loading = true;
+            $http.get(urlbase + '/notifications').success(function (data) {
+                $scope.notifPanel.items = data || [];
+                $scope.notifPanel.loading = false;
+            }).error(function () {
+                $scope.notifPanel.loading = false;
+            });
+            $scope.refreshUnreadCount();
+        };
+
+        $scope.refreshUnreadCount = function () {
+            $http.get(urlbase + '/notifications/count').success(function (data) {
+                $scope.notifPanel.unreadCount = data.unread || 0;
+            });
+        };
+
+        $scope.markNotificationRead = function (n) {
+            $http.put(urlbase + '/notifications/' + n.id + '/read').success(function () {
+                n.read = true;
+                $scope.refreshUnreadCount();
+            });
+        };
+
+        $scope.markAllNotificationsRead = function () {
+            $http.post(urlbase + '/notifications/read-all').success(function () {
+                angular.forEach($scope.notifPanel.items, function (n) { n.read = true; });
+                $scope.notifPanel.unreadCount = 0;
+            });
+        };
+
+        $scope.showNotificationSettings = function () {
+            $scope.refreshNotifPrefs();
+            $('#notificationSettingsModal').modal('show');
+        };
+
+        $scope.refreshNotifPrefs = function () {
+            $http.get(urlbase + '/notification-prefs').success(function (data) {
+                $scope.notifPrefs.list = data || [];
+            });
+        };
+
+        $scope.saveNotifPref = function (pref) {
+            $http.post(urlbase + '/notification-prefs', pref);
+        };
+
+        $scope.addNotifPref = function () {
+            $http.post(urlbase + '/notification-prefs', {
+                folderId: $scope.notifPrefs.newFolderId || '',
+                notifyCreate: true,
+                notifyModify: false,
+                notifyDelete: true,
+                notifyShare: true,
+                notifyEmail: false
+            }).success(function () {
+                $scope.notifPrefs.newFolderId = '';
+                $scope.refreshNotifPrefs();
+            });
+        };
+
+        $scope.deleteNotifPref = function (pref) {
+            $http.delete(urlbase + '/notification-prefs/' + pref.id).success(function () {
+                $scope.refreshNotifPrefs();
+            });
+        };
+
+        // Poll for unread count periodically when authenticated
+        if (window.metadata && window.metadata.multiUser) {
+            setInterval(function () {
+                if ($scope.currentUser) {
+                    $scope.refreshUnreadCount();
+                }
+            }, 30000);
+        }
+
         function refreshNoAuthWarning() {
             if (!$scope.system || !$scope.config || !$scope.config.gui) {
                 // We need all to be able to determine the state.

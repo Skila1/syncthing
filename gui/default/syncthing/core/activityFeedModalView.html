@@ -1,0 +1,85 @@
+<div id="activityFeedModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-stream"></span>
+          <span translate>Activity Feed</span>
+        </h4>
+      </div>
+      <div class="modal-body" style="min-height:300px;">
+        <!-- Filters -->
+        <div class="row" style="margin-bottom:12px;">
+          <div class="col-sm-4">
+            <select class="form-control input-sm" ng-model="activityFeed.filterFolder" ng-change="refreshActivity()">
+              <option value="">All Folders</option>
+              <option ng-repeat="folder in folders" value="{{folder.id}}">{{folder.label || folder.id}}</option>
+            </select>
+          </div>
+          <div class="col-sm-4">
+            <select class="form-control input-sm" ng-model="activityFeed.filterAction" ng-change="refreshActivity()">
+              <option value="">All Actions</option>
+              <option value="file_create">File Created</option>
+              <option value="file_modify">File Modified</option>
+              <option value="file_delete">File Deleted</option>
+              <option value="file_share">File Shared</option>
+              <option value="sync_complete">Sync Complete</option>
+              <option value="user_login">Login</option>
+            </select>
+          </div>
+          <div class="col-sm-4 text-right">
+            <button class="btn btn-default btn-sm" ng-click="refreshActivity()">
+              <span class="fas fa-sync"></span> <span translate>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <div ng-if="activityFeed.loading" class="text-center" style="padding:40px;">
+          <span class="fas fa-spinner fa-spin fa-2x"></span>
+        </div>
+
+        <div ng-if="!activityFeed.loading && activityFeed.entries.length === 0" class="text-muted text-center" style="padding:40px;">
+          <p translate>No activity recorded yet.</p>
+        </div>
+
+        <table class="table table-condensed table-hover" ng-if="!activityFeed.loading && activityFeed.entries.length > 0">
+          <thead>
+            <tr>
+              <th style="width:30px;"></th>
+              <th translate>Action</th>
+              <th translate>Path</th>
+              <th translate>Folder</th>
+              <th translate style="width:160px;">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="entry in activityFeed.entries">
+              <td>
+                <span ng-if="entry.action === 'file_create'" class="fas fa-plus-circle text-success"></span>
+                <span ng-if="entry.action === 'file_modify'" class="fas fa-edit text-info"></span>
+                <span ng-if="entry.action === 'file_delete'" class="fas fa-trash text-danger"></span>
+                <span ng-if="entry.action === 'file_share'" class="fas fa-share text-primary"></span>
+                <span ng-if="entry.action === 'sync_complete'" class="fas fa-sync text-success"></span>
+                <span ng-if="entry.action === 'user_login'" class="fas fa-sign-in-alt text-muted"></span>
+              </td>
+              <td>{{entry.action | activityLabel}}</td>
+              <td><small>{{entry.path}}</small></td>
+              <td><small>{{entry.folderId}}</small></td>
+              <td><small>{{entry.createdAt | date:'short'}}</small></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="text-center" ng-if="activityFeed.entries.length >= activityFeed.limit">
+          <button class="btn btn-default btn-sm" ng-click="loadMoreActivity()">
+            <span translate>Load More</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

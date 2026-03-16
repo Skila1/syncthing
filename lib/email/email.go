@@ -47,6 +47,14 @@ func (c *SMTPConfig) IsConfigured() bool {
 	return c != nil && c.Host != ""
 }
 
+// Send sends a plain text email with the given subject and body.
+func (c *SMTPConfig) Send(toEmail, subject, body string) error {
+	if !c.IsConfigured() {
+		return fmt.Errorf("SMTP not configured")
+	}
+	return c.send(toEmail, subject, body)
+}
+
 // SendPasswordReset sends a password reset email with the given token.
 func (c *SMTPConfig) SendPasswordReset(toEmail, username, resetToken, guiURL string) error {
 	if !c.IsConfigured() {

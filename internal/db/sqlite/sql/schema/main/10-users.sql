@@ -118,3 +118,46 @@ CREATE TABLE IF NOT EXISTS cleanup_policies (
 ;
 CREATE INDEX IF NOT EXISTS cleanup_policies_user ON cleanup_policies (user_id)
 ;
+
+CREATE TABLE IF NOT EXISTS activity_log (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    folder_id TEXT NOT NULL DEFAULT '' COLLATE BINARY,
+    action TEXT NOT NULL COLLATE BINARY, -- file_create, file_modify, file_delete, file_share, sync_complete, user_login
+    path TEXT NOT NULL DEFAULT '' COLLATE BINARY,
+    detail TEXT NOT NULL DEFAULT '' COLLATE BINARY,
+    created_at INTEGER NOT NULL -- unix millis
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS activity_log_user ON activity_log (user_id, created_at)
+;
+CREATE INDEX IF NOT EXISTS activity_log_folder ON activity_log (folder_id, created_at)
+;
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL COLLATE BINARY, -- info, warning, error, activity
+    title TEXT NOT NULL DEFAULT '' COLLATE BINARY,
+    message TEXT NOT NULL COLLATE BINARY,
+    read INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL -- unix millis
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS notifications_user ON notifications (user_id, read, created_at)
+;
+
+CREATE TABLE IF NOT EXISTS notification_prefs (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    folder_id TEXT NOT NULL DEFAULT '' COLLATE BINARY, -- empty = global default
+    notify_create INTEGER NOT NULL DEFAULT 1,
+    notify_modify INTEGER NOT NULL DEFAULT 0,
+    notify_delete INTEGER NOT NULL DEFAULT 1,
+    notify_share INTEGER NOT NULL DEFAULT 1,
+    notify_email INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(user_id, folder_id)
+) STRICT
+;
+CREATE INDEX IF NOT EXISTS notification_prefs_user ON notification_prefs (user_id)
+;

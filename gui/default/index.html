@@ -112,6 +112,12 @@
             <span class="fa fa-user"></span> {{currentUser.username}}
             <span ng-if="currentUser.role === 'admin'" class="label label-primary" style="font-size: 9px; vertical-align: middle;">ADMIN</span>
           </li>
+          <li ng-if="authenticated && currentUser">
+            <a href="" ng-click="showNotificationsPanel()" style="position:relative;">
+              <span class="fa fa-bell"></span>
+              <span ng-if="notifPanel.unreadCount > 0" class="badge" style="position:absolute; top:6px; right:2px; font-size:9px; padding:2px 5px; background:#d9534f;">{{notifPanel.unreadCount}}</span>
+            </a>
+          </li>
           <li ng-if="authenticated" class="dropdown action-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
               <span class="fa fa-cog"></span>
@@ -125,6 +131,7 @@
               <li ng-if="isAdmin()"><a href="" ng-click="showUserManagement()"><span class="fa fa-fw fa-users"></span>&nbsp;<span translate>User Management</span></a></li>
               <li ng-if="isAdmin()"><a href="" ng-click="showAdminShareLinks()"><span class="fa fa-fw fa-link"></span>&nbsp;<span translate>Share Links</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="showCleanupPolicies()"><span class="fa fa-fw fa-broom"></span>&nbsp;<span translate>Cleanup Policies</span></a></li>
+              <li ng-if="currentUser"><a href="" ng-click="showActivityFeed()"><span class="fa fa-fw fa-stream"></span>&nbsp;<span translate>Activity Feed</span></a></li>
               <li ng-if="currentUser"><a href="" ng-click="startMFAEnroll()" ng-if="!currentUser.mfaEnabled"><span class="fa fa-fw fa-lock"></span>&nbsp;<span translate>Enable Two-Factor Auth</span></a></li>
               <li ng-if="currentUser && currentUser.mfaEnabled"><a href="" ng-click="disableMFA()"><span class="fa fa-fw fa-unlock"></span>&nbsp;<span translate>Disable Two-Factor Auth</span></a></li>
               <li class="divider" aria-hidden="true"></li>
@@ -1167,6 +1174,8 @@
   <ng-include ng-if="isAdmin()" src="'syncthing/admin/shareLinksManagementView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/fileBrowserModalView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/cleanupPoliciesModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/activityFeedModalView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/notificationsPanelView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>
@@ -1185,6 +1194,7 @@
   <!-- gui application code -->
   <script type="text/javascript" src="syncthing/core/module.js"></script>
   <script type="text/javascript" src="syncthing/core/alwaysNumberFilter.js"></script>
+  <script type="text/javascript" src="syncthing/core/activityLabelFilter.js"></script>
   <script type="text/javascript" src="syncthing/core/basenameFilter.js"></script>
   <script type="text/javascript" src="syncthing/core/binaryFilter.js"></script>
   <script type="text/javascript" src="syncthing/core/localeNumberFilter.js"></script>

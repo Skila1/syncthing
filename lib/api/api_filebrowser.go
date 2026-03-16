@@ -19,6 +19,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/syncthing/syncthing/lib/filebrowser"
+	"github.com/syncthing/syncthing/lib/notifications"
 	"github.com/syncthing/syncthing/lib/trash"
 )
 
@@ -257,6 +258,13 @@ func (s *service) postFileUpload(w http.ResponseWriter, r *http.Request) {
 			}
 
 			slog.Info("File uploaded", "user", user.Username, "folder", folderID, "file", safeName, "bytes", written)
+			if s.notifManager != nil {
+				uploadPath := safeName
+				if cleanDir != "" {
+					uploadPath = cleanDir + "/" + safeName
+				}
+				s.notifManager.RecordActivity(user.ID, folderID, notifications.ActionFileCreate, uploadPath, "")
+			}
 			uploaded = append(uploaded, safeName)
 		}
 	}
@@ -332,6 +340,9 @@ func (s *service) deleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := userFromRequest(r)
+	if s.notifManager != nil && user != nil {
+		s.notifManager.RecordActivity(user.ID, folderID, notifications.ActionFileDelete, filepath.ToSlash(clean), "")
+	}
 	if s.userManager != nil && user != nil {
 		if err := s.userManager.RecalculateUsage(user.ID, root); err != nil {
 			slog.Error("Failed to recalculate usage after delete", "error", err)
