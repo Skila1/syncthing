@@ -19,6 +19,8 @@ func (s *service) registerUserEndpoints(mux *httprouter.Router) {
 	mux.HandlerFunc(http.MethodGet, "/rest/users", requireAdmin(s.getUsers))
 	mux.HandlerFunc(http.MethodPost, "/rest/users", requireAdmin(s.postUser))
 	mux.HandlerFunc(http.MethodGet, "/rest/system/user", s.getCurrentUser)
+	mux.HandlerFunc(http.MethodGet, "/rest/storage/usage", s.getStorageUsage)
+	mux.HandlerFunc(http.MethodPost, "/rest/storage/recalculate", s.postStorageRecalculate)
 	mux.HandlerFunc(http.MethodGet, "/rest/users/:id", s.getUserByID)
 	mux.HandlerFunc(http.MethodPut, "/rest/users/:id", s.putUser)
 	mux.HandlerFunc(http.MethodDelete, "/rest/users/:id", requireAdmin(s.deleteUser))
@@ -130,9 +132,10 @@ func (s *service) putUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Email  *string `json:"email"`
-		Role   *string `json:"role"`
-		Status *string `json:"status"`
+		Email      *string `json:"email"`
+		Role       *string `json:"role"`
+		Status     *string `json:"status"`
+		QuotaBytes *int64  `json:"quotaBytes"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -155,6 +158,13 @@ func (s *service) putUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		user.Status = *req.Status
+	}
+	if req.QuotaBytes != nil {
+		if !caller.IsAdmin() {
+			http.Error(w, "Only admins can change quotas", http.StatusForbidden)
+			return
+		}
+		user.QuotaBytes = *req.QuotaBytes
 	}
 
 	if err := s.userManager.UpdateUser(user); err != nil {
@@ -237,6 +247,48 @@ func (s *service) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sendJSON(w, user)
+}
+
+func (s *service) getStorageUsage(w http.ResponseWriter, r *http.Request) {
+	user := userFromRequest(r)
+	if user == nil {
+		forbidden(w)
+		return
+	}
+
+	status, err := s.userManager.GetStorageStatus(user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sendJSON(w, status)
+}
+
+func (s *service) postStorageRecalculate(w http.ResponseWriter, r *http.Request) {
+	user := userFromRequest(r)
+	if user == nil {
+		forbidden(w)
+		return
+	}
+
+	if user.IsAdmin() {
+		if err := s.userManager.RecalculateAllUsage(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		if _, err := s.userManager.RecalculateUsage(user.ID); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	status, err := s.userManager.GetStorageStatus(user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sendJSON(w, status)
 }
 
 func parseUserID(r *http.Request) (int64, error) {

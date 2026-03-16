@@ -44,6 +44,7 @@
               <th translate>Username</th>
               <th translate>Email</th>
               <th translate>Role</th>
+              <th translate>Storage</th>
               <th translate>Status</th>
               <th translate>Actions</th>
             </tr>
@@ -58,6 +59,28 @@
               <td>
                 <span ng-if="user.role === 'admin'" class="label label-primary">admin</span>
                 <span ng-if="user.role === 'user'" class="label label-default">user</span>
+              </td>
+              <td style="min-width: 160px;">
+                <div ng-if="user.quotaBytes > 0">
+                  <div class="progress" style="margin-bottom: 2px; height: 16px;">
+                    <div class="progress-bar"
+                         ng-class="{'progress-bar-success': (user.usedBytes / user.quotaBytes * 100) < 80,
+                                    'progress-bar-warning': (user.usedBytes / user.quotaBytes * 100) >= 80 && (user.usedBytes / user.quotaBytes * 100) < 95,
+                                    'progress-bar-danger': (user.usedBytes / user.quotaBytes * 100) >= 95}"
+                         style="min-width: 2em; font-size: 11px; line-height: 16px;"
+                         role="progressbar"
+                         ng-style="{width: (user.usedBytes / user.quotaBytes * 100 | number:0) + '%'}">
+                      {{user.usedBytes / user.quotaBytes * 100 | number:0}}%
+                    </div>
+                  </div>
+                  <small class="text-muted">{{user.usedBytes | binary}} / {{user.quotaBytes | binary}}</small>
+                </div>
+                <div ng-if="!user.quotaBytes || user.quotaBytes === 0">
+                  <small class="text-muted">{{user.usedBytes | binary}} / <span translate>Unlimited</span></small>
+                </div>
+                <button class="btn btn-xs btn-link" ng-click="editUserQuota(user)" title="Set Quota">
+                  <span class="fa fa-pencil"></span>
+                </button>
               </td>
               <td>
                 <span ng-if="user.status === 'active'" class="label label-success">active</span>
@@ -81,10 +104,18 @@
               </td>
             </tr>
             <tr ng-if="!managedUsers || managedUsers.length === 0">
-              <td colspan="5" class="text-center text-muted" translate>No users found</td>
+              <td colspan="6" class="text-center text-muted" translate>No users found</td>
             </tr>
           </tbody>
         </table>
+
+        <!-- Recalculate Usage Button -->
+        <div class="text-right" style="margin-bottom: 10px;">
+          <button class="btn btn-default btn-sm" ng-click="recalculateAllUsage()" ng-disabled="userManagement.recalculating">
+            <span class="fa fa-refresh" ng-class="{'fa-spin': userManagement.recalculating}"></span>&nbsp;
+            <span translate>Recalculate All Usage</span>
+          </button>
+        </div>
 
       </div>
       <div class="modal-footer">
@@ -111,6 +142,31 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal" translate>Cancel</button>
         <button type="button" class="btn btn-primary" ng-click="saveUserPassword()" ng-disabled="!editingUser.newPassword" translate>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Set Quota Modal -->
+<div id="setQuotaModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"><span class="fa fa-database"></span>&nbsp;<span translate>Set Storage Quota</span></h4>
+      </div>
+      <div class="modal-body">
+        <p translate translate-value-user="{{editingQuota.username}}">Set quota for {%user%}</p>
+        <p class="text-muted"><small translate>Current usage:</small> {{editingQuota.usedBytes | binary}}</p>
+        <div class="form-group">
+          <label translate>Quota (GB)</label>
+          <input type="number" class="form-control" ng-model="editingQuota.quotaGB" min="0" step="1" placeholder="0 = Unlimited" />
+          <p class="help-block" translate>Set to 0 for unlimited storage.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Cancel</button>
+        <button type="button" class="btn btn-primary" ng-click="saveUserQuota()" translate>Save</button>
       </div>
     </div>
   </div>

@@ -37,20 +37,20 @@ The core transformation: replace single-user auth with a multi-user system where
 
 ## Step 2: User Quotas & Disk Usage Dashboard
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 3-4 hours
 **Depends on:** Step 1
 
 Give admins control over how much storage each user can consume.
 
-- [ ] Add `quota_bytes` and `used_bytes` columns to `users` table
-- [ ] Quota enforcement in sync engine -- reject incoming blocks that would exceed quota
-- [ ] Quota enforcement on file uploads
-- [ ] Real-time disk usage calculation per user (scan root folder)
-- [ ] Warning thresholds (80%, 95%) with in-app alerts
-- [ ] Admin GUI: set/edit quota per user
-- [ ] User GUI: storage usage dashboard (used / total bar, per-folder breakdown)
-- [ ] API endpoints: `GET /rest/storage/usage`, admin quota management on `PUT /rest/users/:id`
+- [x] Add `quota_bytes` and `used_bytes` columns to `users` table
+- [x] Quota enforcement in sync engine -- reject incoming blocks that would exceed quota
+- [x] Quota enforcement on file uploads
+- [x] Real-time disk usage calculation per user (scan root folder)
+- [x] Warning thresholds (80%, 95%) with in-app alerts
+- [x] Admin GUI: set/edit quota per user
+- [x] User GUI: storage usage dashboard (used / total bar, per-folder breakdown)
+- [x] API endpoints: `GET /rest/storage/usage`, admin quota management on `PUT /rest/users/:id`
 
 ---
 

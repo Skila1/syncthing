@@ -24,14 +24,16 @@ func NewUserStore(db *DB) *UserStore {
 	return &UserStore{db: db.baseDB}
 }
 
+const userColumns = `id, username, email, password_hash, role, root_path, quota_bytes, used_bytes, created_at, updated_at, status`
+
 func (s *UserStore) CreateUser(username, email, passwordHash, role, rootPath string) (*users.User, error) {
 	s.db.updateLock.Lock()
 	defer s.db.updateLock.Unlock()
 
 	now := time.Now().UnixNano()
 	result, err := s.db.stmt(`
-		INSERT INTO users (username, email, password_hash, role, root_path, created_at, updated_at, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+		INSERT INTO users (username, email, password_hash, role, root_path, quota_bytes, used_bytes, created_at, updated_at, status)
+		VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, 'active')
 	`).Exec(username, email, passwordHash, role, rootPath, now, now)
 	if err != nil {
 		if isUniqueConstraintError(err) {
@@ -61,7 +63,7 @@ func (s *UserStore) CreateUser(username, email, passwordHash, role, rootPath str
 func (s *UserStore) GetUser(id int64) (*users.User, error) {
 	var u users.User
 	err := s.db.stmt(`
-		SELECT id, username, email, password_hash, role, root_path, created_at, updated_at, status
+		SELECT ` + userColumns + `
 		FROM users WHERE id = ?
 	`).Get(&u, id)
 	if err != nil {
@@ -76,7 +78,7 @@ func (s *UserStore) GetUser(id int64) (*users.User, error) {
 func (s *UserStore) GetUserByUsername(username string) (*users.User, error) {
 	var u users.User
 	err := s.db.stmt(`
-		SELECT id, username, email, password_hash, role, root_path, created_at, updated_at, status
+		SELECT ` + userColumns + `
 		FROM users WHERE username = ?
 	`).Get(&u, username)
 	if err != nil {
@@ -91,7 +93,7 @@ func (s *UserStore) GetUserByUsername(username string) (*users.User, error) {
 func (s *UserStore) ListUsers() ([]users.User, error) {
 	var result []users.User
 	err := s.db.stmt(`
-		SELECT id, username, email, password_hash, role, root_path, created_at, updated_at, status
+		SELECT ` + userColumns + `
 		FROM users WHERE status != 'deleted'
 		ORDER BY username
 	`).Select(&result)
@@ -107,9 +109,21 @@ func (s *UserStore) UpdateUser(user *users.User) error {
 
 	_, err := s.db.stmt(`
 		UPDATE users
-		SET username = ?, email = ?, password_hash = ?, role = ?, root_path = ?, updated_at = ?, status = ?
+		SET username = ?, email = ?, password_hash = ?, role = ?, root_path = ?,
+		    quota_bytes = ?, used_bytes = ?, updated_at = ?, status = ?
 		WHERE id = ?
-	`).Exec(user.Username, user.Email, user.PasswordHash, user.Role, user.RootPath, user.UpdatedAt, user.Status, user.ID)
+	`).Exec(user.Username, user.Email, user.PasswordHash, user.Role, user.RootPath,
+		user.QuotaBytes, user.UsedBytes, user.UpdatedAt, user.Status, user.ID)
+	return wrap(err)
+}
+
+func (s *UserStore) UpdateUsedBytes(id int64, usedBytes int64) error {
+	s.db.updateLock.Lock()
+	defer s.db.updateLock.Unlock()
+
+	_, err := s.db.stmt(`
+		UPDATE users SET used_bytes = ?, updated_at = ? WHERE id = ?
+	`).Exec(usedBytes, time.Now().UnixNano(), id)
 	return wrap(err)
 }
 

@@ -29,13 +29,17 @@ const (
 	MaxActiveSessions   = 25
 	SessionLifetime     = 7 * 24 * time.Hour
 	SessionTokenLength  = 64
+
+	QuotaWarningPercent  = 80
+	QuotaCriticalPercent = 95
 )
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
-	ErrUserExists        = errors.New("username already exists")
+	ErrUserNotFound       = errors.New("user not found")
+	ErrUserExists         = errors.New("username already exists")
 	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrAccountSuspended  = errors.New("account is suspended")
+	ErrAccountSuspended   = errors.New("account is suspended")
+	ErrQuotaExceeded      = errors.New("storage quota exceeded")
 )
 
 type User struct {
@@ -45,6 +49,8 @@ type User struct {
 	PasswordHash string `json:"-" db:"password_hash"`
 	Role         string `json:"role" db:"role"`
 	RootPath     string `json:"rootPath" db:"root_path"`
+	QuotaBytes   int64  `json:"quotaBytes" db:"quota_bytes"`
+	UsedBytes    int64  `json:"usedBytes" db:"used_bytes"`
 	CreatedAt    int64  `json:"createdAt" db:"created_at"`
 	UpdatedAt    int64  `json:"updatedAt" db:"updated_at"`
 	Status       string `json:"status" db:"status"`
@@ -69,6 +75,7 @@ type Store interface {
 	GetUserByUsername(username string) (*User, error)
 	ListUsers() ([]User, error)
 	UpdateUser(user *User) error
+	UpdateUsedBytes(id int64, usedBytes int64) error
 	DeleteUser(id int64) error
 
 	CreateSession(token string, userID int64, expiresAt int64, ipAddress string) error
@@ -280,6 +287,115 @@ func (m *Manager) SetPassword(userID int64, newPassword string) error {
 func (m *Manager) DeleteUser(id int64) error {
 	m.InvalidateUserSessions(id)
 	return m.store.DeleteUser(id)
+}
+
+// StorageStatus describes a user's current storage state.
+type StorageStatus struct {
+	UsedBytes    int64   `json:"usedBytes"`
+	QuotaBytes   int64   `json:"quotaBytes"`
+	UsagePercent float64 `json:"usagePercent"`
+	Level        string  `json:"level"` // "ok", "warning", "critical", "exceeded"
+}
+
+func (m *Manager) GetStorageStatus(userID int64) (*StorageStatus, error) {
+	user, err := m.store.GetUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	s := &StorageStatus{
+		UsedBytes:  user.UsedBytes,
+		QuotaBytes: user.QuotaBytes,
+	}
+
+	if user.QuotaBytes > 0 {
+		s.UsagePercent = float64(user.UsedBytes) / float64(user.QuotaBytes) * 100
+	}
+
+	switch {
+	case user.QuotaBytes <= 0:
+		s.Level = "ok"
+	case s.UsagePercent >= 100:
+		s.Level = "exceeded"
+	case s.UsagePercent >= float64(QuotaCriticalPercent):
+		s.Level = "critical"
+	case s.UsagePercent >= float64(QuotaWarningPercent):
+		s.Level = "warning"
+	default:
+		s.Level = "ok"
+	}
+
+	return s, nil
+}
+
+// CheckQuota returns ErrQuotaExceeded if accepting additionalBytes would
+// push the user over quota. A quota of 0 means unlimited.
+func (m *Manager) CheckQuota(userID int64, additionalBytes int64) error {
+	user, err := m.store.GetUser(userID)
+	if err != nil {
+		return err
+	}
+	if user.QuotaBytes <= 0 {
+		return nil
+	}
+	if user.UsedBytes+additionalBytes > user.QuotaBytes {
+		return ErrQuotaExceeded
+	}
+	return nil
+}
+
+// RecalculateUsage walks the user's root directory and updates used_bytes.
+func (m *Manager) RecalculateUsage(userID int64) (int64, error) {
+	user, err := m.store.GetUser(userID)
+	if err != nil {
+		return 0, err
+	}
+
+	var total int64
+	err = filepath.Walk(user.RootPath, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // skip unreadable entries
+		}
+		if !info.IsDir() {
+			total += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, fmt.Errorf("walk user directory: %w", err)
+	}
+
+	if err := m.store.UpdateUsedBytes(userID, total); err != nil {
+		return 0, err
+	}
+	return total, nil
+}
+
+// RecalculateAllUsage recalculates disk usage for every active user.
+func (m *Manager) RecalculateAllUsage() error {
+	userList, err := m.store.ListUsers()
+	if err != nil {
+		return err
+	}
+	for _, u := range userList {
+		if u.Status != StatusActive {
+			continue
+		}
+		if _, err := m.RecalculateUsage(u.ID); err != nil {
+			return fmt.Errorf("recalculate user %q: %w", u.Username, err)
+		}
+	}
+	return nil
+}
+
+func (m *Manager) SetQuota(userID int64, quotaBytes int64) error {
+	user, err := m.store.GetUser(userID)
+	if err != nil {
+		return err
+	}
+	user.QuotaBytes = quotaBytes
+	user.UpdatedAt = time.Now().UnixNano()
+	return m.store.UpdateUser(user)
 }
 
 func (m *Manager) CleanExpiredSessions() error {

@@ -73,7 +73,9 @@ angular.module('syncthing.core')
         $scope.managedUsers = [];
         $scope.newUser = { username: '', email: '', password: '', role: 'user' };
         $scope.editingUser = {};
-        $scope.userManagement = { createError: '' };
+        $scope.editingQuota = {};
+        $scope.userManagement = { createError: '', recalculating: false };
+        $scope.storageStatus = null;
 
         if (window.metadata && window.metadata.multiUser) {
             $scope.currentUser = {
@@ -81,6 +83,9 @@ angular.module('syncthing.core')
                 username: window.metadata.username,
                 role: window.metadata.userRole,
             };
+            $http.get(urlbase + '/storage/usage').success(function (data) {
+                $scope.storageStatus = data;
+            });
         }
 
         $scope.login = {
@@ -713,6 +718,44 @@ angular.module('syncthing.core')
                     $scope.refreshUsers();
                 }).error($scope.emitHTTPError);
             }
+        };
+
+        $scope.editUserQuota = function (user) {
+            $scope.editingQuota = {
+                id: user.id,
+                username: user.username,
+                usedBytes: user.usedBytes || 0,
+                quotaGB: user.quotaBytes ? Math.round(user.quotaBytes / (1024 * 1024 * 1024)) : 0
+            };
+            $('#setQuotaModal').modal('show');
+        };
+
+        $scope.saveUserQuota = function () {
+            var quotaBytes = ($scope.editingQuota.quotaGB || 0) * 1024 * 1024 * 1024;
+            $http.put(urlbase + '/users/' + $scope.editingQuota.id, {
+                quotaBytes: quotaBytes
+            }).success(function () {
+                $('#setQuotaModal').modal('hide');
+                $scope.refreshUsers();
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.recalculateAllUsage = function () {
+            $scope.userManagement.recalculating = true;
+            $http.post(urlbase + '/storage/recalculate').success(function (data) {
+                $scope.storageStatus = data;
+                $scope.userManagement.recalculating = false;
+                $scope.refreshUsers();
+            }).error(function () {
+                $scope.userManagement.recalculating = false;
+                $scope.emitHTTPError.apply(this, arguments);
+            });
+        };
+
+        $scope.refreshStorageStatus = function () {
+            $http.get(urlbase + '/storage/usage').success(function (data) {
+                $scope.storageStatus = data;
+            });
         };
 
         function refreshNoAuthWarning() {

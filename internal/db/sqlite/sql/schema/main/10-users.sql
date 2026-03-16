@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL COLLATE BINARY,
     role TEXT NOT NULL DEFAULT 'user' COLLATE BINARY, -- 'admin' or 'user'
     root_path TEXT NOT NULL COLLATE BINARY,
+    quota_bytes INTEGER NOT NULL DEFAULT 0, -- 0 = unlimited
+    used_bytes INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL, -- unix nanos
     updated_at INTEGER NOT NULL, -- unix nanos
     status TEXT NOT NULL DEFAULT 'active' COLLATE BINARY -- 'active', 'suspended', 'deleted'
