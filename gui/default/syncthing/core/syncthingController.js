@@ -68,6 +68,21 @@ angular.module('syncthing.core')
         // window.metadata is set in /meta.js which requires authentication
         $scope.authenticated = window.metadata && window.metadata.authenticated;
 
+        // Multi-user support
+        $scope.currentUser = null;
+        $scope.managedUsers = [];
+        $scope.newUser = { username: '', email: '', password: '', role: 'user' };
+        $scope.editingUser = {};
+        $scope.userManagement = { createError: '' };
+
+        if (window.metadata && window.metadata.multiUser) {
+            $scope.currentUser = {
+                id: window.metadata.userId,
+                username: window.metadata.username,
+                role: window.metadata.userRole,
+            };
+        }
+
         $scope.login = {
             username: '',
             password: '',
@@ -624,12 +639,80 @@ angular.module('syncthing.core')
         }
 
         $scope.isAuthEnabled = function () {
+            if ($scope.currentUser) {
+                return true;
+            }
             // This function should match IsAuthEnabled() in guiconfiguration.go
             var guiCfg = $scope.config && $scope.config.gui;
             if (guiCfg) {
                 return guiCfg.authMode === 'ldap' || (guiCfg.user && guiCfg.password);
             }
             return false;
+        };
+
+        $scope.isAdmin = function () {
+            return $scope.currentUser && $scope.currentUser.role === 'admin';
+        };
+
+        $scope.showUserManagement = function () {
+            $scope.userManagement.createError = '';
+            $scope.refreshUsers();
+            $('#userManagement').modal('show');
+        };
+
+        $scope.refreshUsers = function () {
+            $http.get(urlbase + '/users').success(function (data) {
+                $scope.managedUsers = data;
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.createUser = function () {
+            $scope.userManagement.createError = '';
+            $http.post(urlbase + '/users', $scope.newUser).success(function () {
+                $scope.newUser = { username: '', email: '', password: '', role: 'user' };
+                $scope.refreshUsers();
+            }).error(function (data, status) {
+                if (status === 409) {
+                    $scope.userManagement.createError = 'Username already exists.';
+                } else {
+                    $scope.userManagement.createError = data || 'Failed to create user.';
+                }
+            });
+        };
+
+        $scope.editUserPassword = function (user) {
+            $scope.editingUser = { id: user.id, username: user.username, newPassword: '' };
+            $('#changePasswordModal').modal('show');
+        };
+
+        $scope.saveUserPassword = function () {
+            $http.post(urlbase + '/users/' + $scope.editingUser.id + '/password', {
+                password: $scope.editingUser.newPassword
+            }).success(function () {
+                $('#changePasswordModal').modal('hide');
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.toggleUserRole = function (user) {
+            var newRole = user.role === 'admin' ? 'user' : 'admin';
+            $http.put(urlbase + '/users/' + user.id, { role: newRole }).success(function () {
+                $scope.refreshUsers();
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.toggleUserStatus = function (user) {
+            var newStatus = user.status === 'active' ? 'suspended' : 'active';
+            $http.put(urlbase + '/users/' + user.id, { status: newStatus }).success(function () {
+                $scope.refreshUsers();
+            }).error($scope.emitHTTPError);
+        };
+
+        $scope.deleteUserConfirm = function (user) {
+            if (confirm('Are you sure you want to delete user "' + user.username + '"? This action cannot be undone.')) {
+                $http.delete(urlbase + '/users/' + user.id).success(function () {
+                    $scope.refreshUsers();
+                }).error($scope.emitHTTPError);
+            }
         };
 
         function refreshNoAuthWarning() {

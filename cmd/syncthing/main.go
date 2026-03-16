@@ -508,7 +508,7 @@ func (c *serveCmd) syncthingMain() {
 		os.Exit(1)
 	}
 
-	sdb, err := syncthing.OpenDatabase(locations.Get(locations.Database), c.DBDeleteRetentionInterval)
+	sdb, sqlDB, err := syncthing.OpenDatabase(locations.Get(locations.Database), c.DBDeleteRetentionInterval)
 	if err != nil {
 		slog.Error("Error opening database", slogutil.Error(err))
 		os.Exit(1)
@@ -567,7 +567,7 @@ func (c *serveCmd) syncthingMain() {
 		appOpts.AuditWriter = auditWriter(auditFile)
 	}
 
-	app, err := syncthing.New(cfgWrapper, sdb, evLogger, cert, appOpts)
+	app, err := syncthing.New(cfgWrapper, sdb, sqlDB, evLogger, cert, appOpts)
 	if err != nil {
 		slog.Error("Failed to start Syncthing", slogutil.Error(err))
 		os.Exit(svcutil.ExitError.AsInt())
