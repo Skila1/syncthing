@@ -45,7 +45,9 @@ import (
 	"github.com/syncthing/syncthing/lib/permissions"
 	"github.com/syncthing/syncthing/lib/email"
 	"github.com/syncthing/syncthing/lib/audit"
+	"github.com/syncthing/syncthing/lib/comments"
 	"github.com/syncthing/syncthing/lib/encryption"
+	"github.com/syncthing/syncthing/lib/groups"
 	"github.com/syncthing/syncthing/lib/notifications"
 	"github.com/syncthing/syncthing/lib/sharing"
 	"github.com/syncthing/syncthing/lib/syncext"
@@ -86,6 +88,8 @@ type App struct {
 	auditStore        audit.Store
 	ipRestrictionStore audit.IPRestrictionStore
 	encryptionStore   encryption.Store
+	groupManager      *groups.Manager
+	commentStore      comments.Store
 	evLogger          events.Logger
 	cert              tls.Certificate
 	opts              Options
@@ -128,6 +132,10 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 	ipRestrSt := sqlite.NewIPRestrictionStore(sqlDB)
 	encSt := sqlite.NewEncryptionStore(sqlDB)
 
+	groupSt := sqlite.NewGroupStore(sqlDB)
+	groupMgr := groups.NewManager(groupSt)
+	commentSt := sqlite.NewCommentStore(sqlDB)
+
 	adminUser := os.Getenv("ST_ADMIN_USER")
 	if adminUser == "" {
 		adminUser = "admin"
@@ -157,6 +165,8 @@ func New(cfg config.Wrapper, sdb db.DB, sqlDB *sqlite.DB, evLogger events.Logger
 		auditStore:         auditSt,
 		ipRestrictionStore: ipRestrSt,
 		encryptionStore:    encSt,
+		groupManager:       groupMgr,
+		commentStore:       commentSt,
 		evLogger:           evLogger,
 		opts:        opts,
 		cert:        cert,
@@ -490,7 +500,7 @@ func (a *App) setupGUI(m model.Model, defaultSub, diskSub events.BufferedSubscri
 	summaryService := model.NewFolderSummaryService(a.cfg, m, a.myID, a.evLogger)
 	a.mainService.Add(summaryService)
 
-	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager, a.cleanupStore, a.notifManager, a.syncExtStore, a.auditLogger, a.auditStore, a.ipRestrictionStore, a.encryptionStore)
+	apiSvc := api.New(a.myID, a.cfg, locations.Get(locations.GUIAssets), tlsDefaultCommonName, m, defaultSub, diskSub, a.evLogger, discoverer, connectionsService, urService, summaryService, errors, systemLog, a.opts.NoUpgrade, miscDB, a.userManager, a.permManager, a.shareManager, a.cleanupStore, a.notifManager, a.syncExtStore, a.auditLogger, a.auditStore, a.ipRestrictionStore, a.encryptionStore, a.groupManager, a.commentStore)
 	a.mainService.Add(apiSvc)
 
 	if err := apiSvc.WaitForStart(); err != nil {

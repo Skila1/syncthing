@@ -1631,6 +1631,173 @@ angular.module('syncthing.core')
             });
         };
 
+        // --- Group Management ---
+
+        $scope.groupMgmt = {
+            groups: [],
+            newGroup: { name: '', description: '' },
+            selectedGroup: null,
+            showMembers: false,
+            showFolders: false,
+            members: [],
+            groupFolders: [],
+            addMemberUserId: null,
+            addFolderPick: { folderId: '', permission: 'read' }
+        };
+
+        $scope.showGroupManagement = function () {
+            $scope.refreshGroups();
+            $('#groupManagementModal').modal('show');
+        };
+
+        $scope.refreshGroups = function () {
+            $http.get(urlbase + '/groups').success(function (data) {
+                $scope.groupMgmt.groups = data || [];
+            });
+        };
+
+        $scope.createGroup = function () {
+            if (!$scope.groupMgmt.newGroup.name) return;
+            $http.post(urlbase + '/groups', $scope.groupMgmt.newGroup).success(function () {
+                $scope.groupMgmt.newGroup = { name: '', description: '' };
+                $scope.refreshGroups();
+            });
+        };
+
+        $scope.deleteGroupItem = function (group) {
+            $http.delete(urlbase + '/groups/' + group.id).success(function () {
+                $scope.refreshGroups();
+                if ($scope.groupMgmt.selectedGroup && $scope.groupMgmt.selectedGroup.id === group.id) {
+                    $scope.groupMgmt.selectedGroup = null;
+                    $scope.groupMgmt.showMembers = false;
+                    $scope.groupMgmt.showFolders = false;
+                }
+            });
+        };
+
+        $scope.showGroupMembers = function (group) {
+            $scope.groupMgmt.selectedGroup = group;
+            $scope.groupMgmt.showMembers = true;
+            $scope.groupMgmt.showFolders = false;
+            $http.get(urlbase + '/groups/' + group.id + '/members').success(function (data) {
+                $scope.groupMgmt.members = data || [];
+            });
+        };
+
+        $scope.addGroupMember = function () {
+            if (!$scope.groupMgmt.addMemberUserId) return;
+            $http.post(urlbase + '/groups/' + $scope.groupMgmt.selectedGroup.id + '/members', {
+                userId: $scope.groupMgmt.addMemberUserId
+            }).success(function () {
+                $scope.groupMgmt.addMemberUserId = null;
+                $scope.showGroupMembers($scope.groupMgmt.selectedGroup);
+            });
+        };
+
+        $scope.removeGroupMember = function (m) {
+            $http.delete(urlbase + '/groups/' + $scope.groupMgmt.selectedGroup.id + '/members/' + m.userId).success(function () {
+                $scope.showGroupMembers($scope.groupMgmt.selectedGroup);
+            });
+        };
+
+        $scope.showGroupFolders = function (group) {
+            $scope.groupMgmt.selectedGroup = group;
+            $scope.groupMgmt.showFolders = true;
+            $scope.groupMgmt.showMembers = false;
+            $http.get(urlbase + '/groups/' + group.id + '/folders').success(function (data) {
+                $scope.groupMgmt.groupFolders = data || [];
+            });
+        };
+
+        $scope.addGroupFolder = function () {
+            var pick = $scope.groupMgmt.addFolderPick;
+            if (!pick.folderId) return;
+            $http.post(urlbase + '/groups/' + $scope.groupMgmt.selectedGroup.id + '/folders', {
+                folderId: pick.folderId,
+                permission: pick.permission || 'read'
+            }).success(function () {
+                $scope.groupMgmt.addFolderPick = { folderId: '', permission: 'read' };
+                $scope.showGroupFolders($scope.groupMgmt.selectedGroup);
+            });
+        };
+
+        $scope.removeGroupFolder = function (gf) {
+            $http.delete(urlbase + '/groups/' + $scope.groupMgmt.selectedGroup.id + '/folders/' + gf.folderId).success(function () {
+                $scope.showGroupFolders($scope.groupMgmt.selectedGroup);
+            });
+        };
+
+        // --- Comments ---
+
+        $scope.commentView = {
+            folderId: '',
+            filePath: '',
+            list: [],
+            total: 0,
+            loading: false,
+            newContent: ''
+        };
+
+        $scope.showComments = function (entry) {
+            $scope.commentView.folderId = $scope.fileBrowser.folderId;
+            $scope.commentView.filePath = entry ? entry.path : '';
+            $scope.commentView.newContent = '';
+            $scope.refreshComments();
+            $('#commentsModal').modal('show');
+        };
+
+        $scope.refreshComments = function () {
+            $scope.commentView.loading = true;
+            $http.get(urlbase + '/comments', {
+                params: {
+                    folder: $scope.commentView.folderId,
+                    path: $scope.commentView.filePath,
+                    limit: 50,
+                    offset: 0
+                }
+            }).success(function (data) {
+                $scope.commentView.list = data.comments || [];
+                $scope.commentView.total = data.total || 0;
+                $scope.commentView.loading = false;
+            }).error(function () {
+                $scope.commentView.list = [];
+                $scope.commentView.loading = false;
+            });
+        };
+
+        $scope.loadMoreComments = function () {
+            $http.get(urlbase + '/comments', {
+                params: {
+                    folder: $scope.commentView.folderId,
+                    path: $scope.commentView.filePath,
+                    limit: 50,
+                    offset: $scope.commentView.list.length
+                }
+            }).success(function (data) {
+                $scope.commentView.list = $scope.commentView.list.concat(data.comments || []);
+                $scope.commentView.total = data.total || 0;
+            });
+        };
+
+        $scope.postCommentItem = function () {
+            var content = ($scope.commentView.newContent || '').trim();
+            if (!content) return;
+            $http.post(urlbase + '/comments', {
+                folderId: $scope.commentView.folderId,
+                filePath: $scope.commentView.filePath,
+                content: content
+            }).success(function () {
+                $scope.commentView.newContent = '';
+                $scope.refreshComments();
+            });
+        };
+
+        $scope.deleteCommentItem = function (c) {
+            $http.delete(urlbase + '/comments/' + c.id).success(function () {
+                $scope.refreshComments();
+            });
+        };
+
         // --- Audit Log ---
 
         $scope.auditLog = {

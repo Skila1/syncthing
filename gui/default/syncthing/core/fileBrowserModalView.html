@@ -154,6 +154,9 @@
                     <button ng-if="!entry.isDir" class="btn btn-xs btn-default" ng-click="showVersionHistory(entry)" title="History">
                       <span class="fas fa-history"></span>
                     </button>
+                    <button class="btn btn-xs btn-info" ng-click="showComments(entry)" title="Comments">
+                      <span class="fas fa-comment"></span>
+                    </button>
                     <a ng-if="!entry.isDir" ng-href="{{urlbase}}/files/download?folder={{fileBrowser.folderId}}&path={{entry.path}}" target="_blank" class="btn btn-xs btn-default" title="Download">
                       <span class="fas fa-download"></span>
                     </a>

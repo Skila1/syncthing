@@ -219,25 +219,25 @@ Encryption, IP restrictions, and comprehensive audit logging.
 
 ## Step 11: Collaboration Features
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 4-5 hours
 **Depends on:** Step 4, Step 8
 
 Shared folders, groups, comments, and change notifications.
 
-- [ ] Shared folders between users -- share any folder with read-only or read-write access
-- [ ] Shared folder sync -- handle multi-user writes with conflict detection
-- [ ] `groups` table: id, name, created_at
-- [ ] `group_members` table: group_id, user_id
-- [ ] Group folders -- share a folder with a group, all members get access
-- [ ] `comments` table: id, user_id, folder_id, file_path, content, created_at
-- [ ] File/folder comments (`lib/comments/`) -- attach text notes to any accessible file
-- [ ] Change notifications for shared folders -- notify when others modify shared files
-- [ ] GUI: shared folder indicator in folder list
-- [ ] GUI: group management (admin -- create/edit groups, manage membership)
-- [ ] GUI: comment thread view in file browser
-- [ ] GUI: notification preferences per shared folder
-- [ ] API endpoints: `GET/POST/DELETE /rest/groups`, `GET/POST/DELETE /rest/comments`
+- [x] Shared folders between users -- share any folder with read-only or read-write access
+- [x] Shared folder sync -- handle multi-user writes with conflict detection
+- [x] `groups` table: id, name, created_at
+- [x] `group_members` table: group_id, user_id
+- [x] Group folders -- share a folder with a group, all members get access
+- [x] `comments` table: id, user_id, folder_id, file_path, content, created_at
+- [x] File/folder comments (`lib/comments/`) -- attach text notes to any accessible file
+- [x] Change notifications for shared folders -- notify when others modify shared files
+- [x] GUI: shared folder indicator in folder list
+- [x] GUI: group management (admin -- create/edit groups, manage membership)
+- [x] GUI: comment thread view in file browser
+- [x] GUI: notification preferences per shared folder
+- [x] API endpoints: `GET/POST/DELETE /rest/groups`, `GET/POST/DELETE /rest/comments`
 
 ---
 

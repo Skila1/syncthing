@@ -1,0 +1,158 @@
+<div id="groupManagementModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-users"></span>
+          <span translate>Group Management</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+
+        <!-- Group list -->
+        <table class="table table-condensed table-striped" ng-if="groupMgmt.groups.length > 0">
+          <thead>
+            <tr>
+              <th translate>Name</th>
+              <th translate>Description</th>
+              <th translate>Members</th>
+              <th translate>Folders</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="group in groupMgmt.groups">
+              <td><strong>{{group.name}}</strong></td>
+              <td><small>{{group.description}}</small></td>
+              <td>
+                <button class="btn btn-xs btn-default" ng-click="showGroupMembers(group)">
+                  <span class="fas fa-user-friends"></span> Manage
+                </button>
+              </td>
+              <td>
+                <button class="btn btn-xs btn-default" ng-click="showGroupFolders(group)">
+                  <span class="fas fa-folder"></span> Manage
+                </button>
+              </td>
+              <td>
+                <button class="btn btn-xs btn-danger" ng-click="deleteGroupItem(group)">
+                  <span class="fas fa-trash"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div ng-if="groupMgmt.groups.length === 0" class="text-muted text-center" style="padding:20px;">
+          <p translate>No groups created yet.</p>
+        </div>
+
+        <!-- Create group -->
+        <div class="well well-sm" style="margin-top:8px;">
+          <h6 translate>Create Group</h6>
+          <div class="row">
+            <div class="col-sm-4">
+              <input type="text" class="form-control input-sm" ng-model="groupMgmt.newGroup.name" placeholder="Group Name" />
+            </div>
+            <div class="col-sm-5">
+              <input type="text" class="form-control input-sm" ng-model="groupMgmt.newGroup.description" placeholder="Description (optional)" />
+            </div>
+            <div class="col-sm-3">
+              <button class="btn btn-success btn-sm btn-block" ng-click="createGroup()">
+                <span class="fas fa-plus"></span> <span translate>Create</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Member management sub-panel -->
+        <div ng-if="groupMgmt.selectedGroup && groupMgmt.showMembers" class="panel panel-info" style="margin-top:12px;">
+          <div class="panel-heading">
+            <span class="fas fa-user-friends"></span>
+            Members of <strong>{{groupMgmt.selectedGroup.name}}</strong>
+            <button class="close" ng-click="groupMgmt.showMembers = false"><span>&times;</span></button>
+          </div>
+          <div class="panel-body">
+            <table class="table table-condensed" ng-if="groupMgmt.members.length > 0">
+              <tbody>
+                <tr ng-repeat="m in groupMgmt.members">
+                  <td>User #{{m.userId}}</td>
+                  <td class="text-right">
+                    <button class="btn btn-xs btn-danger" ng-click="removeGroupMember(m)">
+                      <span class="fas fa-times"></span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p ng-if="groupMgmt.members.length === 0" class="text-muted" translate>No members.</p>
+            <div class="row">
+              <div class="col-sm-6">
+                <div class="input-group input-group-sm">
+                  <input type="number" class="form-control" ng-model="groupMgmt.addMemberUserId" placeholder="User ID" />
+                  <span class="input-group-btn">
+                    <button class="btn btn-success" ng-click="addGroupMember()">
+                      <span class="fas fa-plus"></span> Add
+                    </button>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Folder assignment sub-panel -->
+        <div ng-if="groupMgmt.selectedGroup && groupMgmt.showFolders" class="panel panel-warning" style="margin-top:12px;">
+          <div class="panel-heading">
+            <span class="fas fa-folder"></span>
+            Folders for <strong>{{groupMgmt.selectedGroup.name}}</strong>
+            <button class="close" ng-click="groupMgmt.showFolders = false"><span>&times;</span></button>
+          </div>
+          <div class="panel-body">
+            <table class="table table-condensed" ng-if="groupMgmt.groupFolders.length > 0">
+              <thead>
+                <tr><th>Folder</th><th>Permission</th><th></th></tr>
+              </thead>
+              <tbody>
+                <tr ng-repeat="gf in groupMgmt.groupFolders">
+                  <td>{{gf.folderId}}</td>
+                  <td><span class="label" ng-class="gf.permission === 'readwrite' ? 'label-success' : 'label-info'">{{gf.permission}}</span></td>
+                  <td class="text-right">
+                    <button class="btn btn-xs btn-danger" ng-click="removeGroupFolder(gf)">
+                      <span class="fas fa-times"></span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p ng-if="groupMgmt.groupFolders.length === 0" class="text-muted" translate>No folders assigned.</p>
+            <div class="row">
+              <div class="col-sm-4">
+                <select class="form-control input-sm" ng-model="groupMgmt.addFolderPick.folderId">
+                  <option value="">Select folder...</option>
+                  <option ng-repeat="folder in folders" value="{{folder.id}}">{{folder.label || folder.id}}</option>
+                </select>
+              </div>
+              <div class="col-sm-3">
+                <select class="form-control input-sm" ng-model="groupMgmt.addFolderPick.permission">
+                  <option value="read">Read</option>
+                  <option value="readwrite">Read-Write</option>
+                </select>
+              </div>
+              <div class="col-sm-3">
+                <button class="btn btn-success btn-sm" ng-click="addGroupFolder()">
+                  <span class="fas fa-plus"></span> Add Folder
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
