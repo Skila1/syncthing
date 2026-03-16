@@ -198,22 +198,22 @@ Selective sync, scheduling, bandwidth limits, and conflict resolution.
 
 ## Step 10: Security Hardening
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 4-5 hours
 **Depends on:** Step 1, Step 3, Step 4
 
 Encryption, IP restrictions, and comprehensive audit logging.
 
-- [ ] Per-user encryption keys (`lib/encryption/`) -- key derivation, at-rest encryption per user folder
-- [ ] Key escrow option for admin recovery
-- [ ] `ip_restrictions` table: id, user_id, cidr, action (allow/deny)
-- [ ] IP restriction middleware in `lib/api/` -- enforce per-user and global allow/deny lists
-- [ ] `audit_log` table: id, user_id, action, target_type, target_id, ip_address, details_json, created_at
-- [ ] Audit logging (`lib/audit/`) -- record all security-relevant events (login, logout, password change, permission change, share, admin actions)
-- [ ] Admin activity log -- separate immutable (append-only) trail for admin actions
-- [ ] GUI: audit log viewer with filtering and export (CSV/JSON)
-- [ ] GUI: IP restriction management (admin)
-- [ ] API endpoints: `GET /rest/audit`, `GET/POST /rest/ip-restrictions`
+- [x] Per-user encryption keys (`lib/encryption/`) -- key derivation, at-rest encryption per user folder
+- [x] Key escrow option for admin recovery
+- [x] `ip_restrictions` table: id, user_id, cidr, action (allow/deny)
+- [x] IP restriction middleware in `lib/api/` -- enforce per-user and global allow/deny lists
+- [x] `audit_log` table: id, user_id, action, target_type, target_id, ip_address, details_json, created_at
+- [x] Audit logging (`lib/audit/`) -- record all security-relevant events (login, logout, password change, permission change, share, admin actions)
+- [x] Admin activity log -- separate immutable (append-only) trail for admin actions
+- [x] GUI: audit log viewer with filtering and export (CSV/JSON)
+- [x] GUI: IP restriction management (admin)
+- [x] API endpoints: `GET /rest/audit`, `GET/POST /rest/ip-restrictions`
 
 ---
 

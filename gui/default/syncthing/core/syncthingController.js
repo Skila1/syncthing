@@ -1631,6 +1631,93 @@ angular.module('syncthing.core')
             });
         };
 
+        // --- Audit Log ---
+
+        $scope.auditLog = {
+            entries: [],
+            total: 0,
+            loading: false,
+            filterAction: '',
+            filterTargetType: '',
+            filterUserId: null
+        };
+
+        $scope.showAuditLog = function () {
+            $scope.refreshAuditLog();
+            $('#auditLogModal').modal('show');
+        };
+
+        $scope.refreshAuditLog = function () {
+            $scope.auditLog.loading = true;
+            var params = { limit: 100, offset: 0 };
+            if ($scope.auditLog.filterAction) params.action = $scope.auditLog.filterAction;
+            if ($scope.auditLog.filterTargetType) params.targetType = $scope.auditLog.filterTargetType;
+            if ($scope.auditLog.filterUserId) params.userId = $scope.auditLog.filterUserId;
+
+            $http.get(urlbase + '/audit', { params: params }).success(function (data) {
+                $scope.auditLog.entries = data.entries || [];
+                $scope.auditLog.total = data.total || 0;
+                $scope.auditLog.loading = false;
+            }).error(function () {
+                $scope.auditLog.entries = [];
+                $scope.auditLog.loading = false;
+            });
+        };
+
+        $scope.exportAuditLog = function (format) {
+            window.open(urlbase + '/audit/export?format=' + format, '_blank');
+        };
+
+        $scope.loadMoreAudit = function () {
+            var params = { limit: 100, offset: $scope.auditLog.entries.length };
+            if ($scope.auditLog.filterAction) params.action = $scope.auditLog.filterAction;
+            if ($scope.auditLog.filterTargetType) params.targetType = $scope.auditLog.filterTargetType;
+            if ($scope.auditLog.filterUserId) params.userId = $scope.auditLog.filterUserId;
+
+            $http.get(urlbase + '/audit', { params: params }).success(function (data) {
+                $scope.auditLog.entries = $scope.auditLog.entries.concat(data.entries || []);
+                $scope.auditLog.total = data.total || 0;
+            });
+        };
+
+        // --- IP Restrictions ---
+
+        $scope.ipRestrictions = {
+            list: [],
+            newRule: { cidr: '', action: 'deny', userId: 0, description: '' }
+        };
+
+        $scope.showIPRestrictions = function () {
+            $scope.refreshIPRestrictions();
+            $('#ipRestrictionsModal').modal('show');
+        };
+
+        $scope.refreshIPRestrictions = function () {
+            $http.get(urlbase + '/ip-restrictions').success(function (data) {
+                $scope.ipRestrictions.list = data || [];
+            });
+        };
+
+        $scope.addIPRule = function () {
+            var rule = $scope.ipRestrictions.newRule;
+            if (!rule.cidr) return;
+            $http.post(urlbase + '/ip-restrictions', {
+                cidr: rule.cidr,
+                action: rule.action || 'deny',
+                userId: rule.userId || 0,
+                description: rule.description || ''
+            }).success(function () {
+                $scope.ipRestrictions.newRule = { cidr: '', action: 'deny', userId: 0, description: '' };
+                $scope.refreshIPRestrictions();
+            });
+        };
+
+        $scope.deleteIPRule = function (rule) {
+            $http.delete(urlbase + '/ip-restrictions/' + rule.id).success(function () {
+                $scope.refreshIPRestrictions();
+            });
+        };
+
         function refreshNoAuthWarning() {
             if (!$scope.system || !$scope.config || !$scope.config.gui) {
                 // We need all to be able to determine the state.

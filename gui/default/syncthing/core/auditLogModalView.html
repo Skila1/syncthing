@@ -1,0 +1,109 @@
+<div id="auditLogModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-shield-alt"></span>
+          <span translate>Audit Log</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+
+        <div class="row" style="margin-bottom:10px;">
+          <div class="col-sm-3">
+            <select class="form-control input-sm" ng-model="auditLog.filterAction" ng-change="refreshAuditLog()">
+              <option value="">All Actions</option>
+              <option value="login">Login</option>
+              <option value="login_failed">Login Failed</option>
+              <option value="logout">Logout</option>
+              <option value="password_change">Password Change</option>
+              <option value="password_reset">Password Reset</option>
+              <option value="mfa_enable">MFA Enable</option>
+              <option value="mfa_disable">MFA Disable</option>
+              <option value="user_create">User Create</option>
+              <option value="user_delete">User Delete</option>
+              <option value="user_update">User Update</option>
+              <option value="permission_change">Permission Change</option>
+              <option value="share_create">Share Create</option>
+              <option value="share_revoke">Share Revoke</option>
+              <option value="file_upload">File Upload</option>
+              <option value="file_delete">File Delete</option>
+              <option value="ip_rule_create">IP Rule Create</option>
+              <option value="ip_rule_delete">IP Rule Delete</option>
+              <option value="config_change">Config Change</option>
+            </select>
+          </div>
+          <div class="col-sm-3">
+            <select class="form-control input-sm" ng-model="auditLog.filterTargetType" ng-change="refreshAuditLog()">
+              <option value="">All Targets</option>
+              <option value="user">User</option>
+              <option value="folder">Folder</option>
+              <option value="device">Device</option>
+              <option value="share">Share</option>
+              <option value="file">File</option>
+              <option value="system">System</option>
+              <option value="ip_rule">IP Rule</option>
+            </select>
+          </div>
+          <div class="col-sm-3">
+            <input type="number" class="form-control input-sm" ng-model="auditLog.filterUserId" placeholder="User ID" ng-change="refreshAuditLog()" />
+          </div>
+          <div class="col-sm-3 text-right">
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-default" ng-click="exportAuditLog('csv')">
+                <span class="fas fa-file-csv"></span> CSV
+              </button>
+              <button class="btn btn-default" ng-click="exportAuditLog('json')">
+                <span class="fas fa-file-code"></span> JSON
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div ng-if="auditLog.loading" class="text-center" style="padding:30px;">
+          <span class="fas fa-spinner fa-spin fa-2x"></span>
+        </div>
+
+        <table class="table table-condensed table-striped table-hover" ng-if="!auditLog.loading">
+          <thead>
+            <tr>
+              <th translate>Time</th>
+              <th translate>User</th>
+              <th translate>Action</th>
+              <th translate>Target</th>
+              <th translate>IP</th>
+              <th translate>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="entry in auditLog.entries">
+              <td><small>{{entry.createdAt | date:'medium'}}</small></td>
+              <td>{{entry.userId}}</td>
+              <td><span class="label label-default">{{entry.action}}</span></td>
+              <td><small>{{entry.targetType}} {{entry.targetId}}</small></td>
+              <td><small>{{entry.ipAddress}}</small></td>
+              <td><small>{{entry.details}}</small></td>
+            </tr>
+            <tr ng-if="auditLog.entries.length === 0">
+              <td colspan="6" class="text-center text-muted" translate>No audit entries found.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="text-center" ng-if="auditLog.total > auditLog.entries.length">
+          <button class="btn btn-sm btn-default" ng-click="loadMoreAudit()">
+            <span translate>Load More</span> ({{auditLog.entries.length}} / {{auditLog.total}})
+          </button>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" ng-click="refreshAuditLog()">
+          <span class="fas fa-sync"></span> <span translate>Refresh</span>
+        </button>
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

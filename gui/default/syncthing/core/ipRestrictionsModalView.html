@@ -1,0 +1,88 @@
+<div id="ipRestrictionsModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-network-wired"></span>
+          <span translate>IP Restrictions</span>
+        </h4>
+      </div>
+      <div class="modal-body">
+
+        <p class="text-muted"><small translate>Manage IP allow/deny rules. Rules with user_id 0 apply globally. Allow rules create a whitelist (deny by default). Deny-only rules create a blacklist (allow by default).</small></p>
+
+        <table class="table table-condensed table-striped" ng-if="ipRestrictions.list.length > 0">
+          <thead>
+            <tr>
+              <th translate>CIDR / IP</th>
+              <th translate>Action</th>
+              <th translate>User</th>
+              <th translate>Description</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="rule in ipRestrictions.list">
+              <td><code>{{rule.cidr}}</code></td>
+              <td>
+                <span class="label" ng-class="rule.action === 'allow' ? 'label-success' : 'label-danger'">{{rule.action}}</span>
+              </td>
+              <td>{{rule.userId === 0 ? 'Global' : rule.userId}}</td>
+              <td><small>{{rule.description}}</small></td>
+              <td>
+                <button class="btn btn-xs btn-danger" ng-click="deleteIPRule(rule)">
+                  <span class="fas fa-trash"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div ng-if="ipRestrictions.list.length === 0" class="text-muted" style="padding:8px 0;">
+          <p translate>No IP restrictions configured. All IPs are allowed.</p>
+        </div>
+
+        <hr />
+
+        <h6 translate>Add Rule</h6>
+        <div class="row">
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label translate>CIDR / IP</label>
+              <input type="text" class="form-control input-sm" ng-model="ipRestrictions.newRule.cidr" placeholder="192.168.1.0/24" />
+            </div>
+          </div>
+          <div class="col-sm-2">
+            <div class="form-group">
+              <label translate>Action</label>
+              <select class="form-control input-sm" ng-model="ipRestrictions.newRule.action">
+                <option value="allow">Allow</option>
+                <option value="deny">Deny</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-sm-2">
+            <div class="form-group">
+              <label translate>User ID</label>
+              <input type="number" class="form-control input-sm" ng-model="ipRestrictions.newRule.userId" placeholder="0 = global" />
+            </div>
+          </div>
+          <div class="col-sm-4">
+            <div class="form-group">
+              <label translate>Description</label>
+              <input type="text" class="form-control input-sm" ng-model="ipRestrictions.newRule.description" />
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-success btn-sm" ng-click="addIPRule()">
+          <span class="fas fa-plus"></span> <span translate>Add Rule</span>
+        </button>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>

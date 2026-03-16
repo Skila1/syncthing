@@ -90,13 +90,13 @@ Selective sync, scheduling, bandwidth limits, and conflict resolution.
 - [x] Time-window sync scheduling
 - [x] Conflict resolution UI (keep local, keep remote, merge)
 
-### Step 10: Security Hardening
+### Step 10: Security Hardening -- COMPLETE
 
 Encryption, IP restrictions, and audit logging.
 
-- [ ] Per-user at-rest encryption
-- [ ] IP allow/deny lists per user
-- [ ] Immutable audit log for all security events
+- [x] Per-user at-rest encryption
+- [x] IP allow/deny lists per user
+- [x] Immutable audit log for all security events
 
 ### Step 11: Collaboration Features
 
@@ -152,7 +152,7 @@ Final integration testing and documentation.
 | 7 | Trash, Versions & Cleanup | **Complete** |
 | 8 | Activity Feed & Notifications | **Complete** |
 | 9 | Sync Enhancements | **Complete** |
-| 10 | Security Hardening | Planned |
+| 10 | Security Hardening | **Complete** |
 | 11 | Collaboration Features | Planned |
 | 12 | Admin Platform | Planned |
 | 13 | Storage Pools (Multi-Disk) | Planned |

@@ -58,6 +58,8 @@ import (
 	"github.com/syncthing/syncthing/lib/tlsutil"
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/permissions"
+	"github.com/syncthing/syncthing/lib/audit"
+	"github.com/syncthing/syncthing/lib/encryption"
 	"github.com/syncthing/syncthing/lib/notifications"
 	"github.com/syncthing/syncthing/lib/sharing"
 	"github.com/syncthing/syncthing/lib/syncext"
@@ -97,6 +99,10 @@ type service struct {
 	notifManager         *notifications.Manager
 	syncExtStore         syncext.Store
 	syncExtAdminCeiling  *syncext.UserBandwidth
+	auditLogger          *audit.Logger
+	auditStore           audit.Store
+	ipRestrictionStore   audit.IPRestrictionStore
+	encryptionStore      encryption.Store
 	noUpgrade            bool
 	tlsDefaultCommonName string
 	configChanged        chan struct{} // signals intentional listener close due to config change
@@ -120,7 +126,7 @@ type Service interface {
 	WaitForStart() error
 }
 
-func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager, permManager *permissions.Manager, shareManager *sharing.Manager, cleanupStore trash.CleanupStore, notifManager *notifications.Manager, syncExtStore syncext.Store) Service {
+func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager, permManager *permissions.Manager, shareManager *sharing.Manager, cleanupStore trash.CleanupStore, notifManager *notifications.Manager, syncExtStore syncext.Store, auditLogger *audit.Logger, auditStore audit.Store, ipRestrictionStore audit.IPRestrictionStore, encryptionStore encryption.Store) Service {
 	return &service{
 		id:      id,
 		cfg:     cfg,
@@ -141,6 +147,10 @@ func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonNam
 		cleanupStore:         cleanupStore,
 		notifManager:         notifManager,
 		syncExtStore:         syncExtStore,
+		auditLogger:          auditLogger,
+		auditStore:           auditStore,
+		ipRestrictionStore:   ipRestrictionStore,
+		encryptionStore:      encryptionStore,
 		guiErrors:            errors,
 		systemLog:            systemLog,
 		noUpgrade:            noUpgrade,
@@ -421,6 +431,9 @@ func (s *service) Serve(ctx context.Context) error {
 		}
 		if s.syncExtStore != nil {
 			s.registerSyncExtEndpoints(restMux)
+		}
+		if s.auditStore != nil {
+			s.registerSecurityEndpoints(restMux)
 		}
 	} else if guiCfg.IsAuthEnabled() {
 		tokenCookieManager := newTokenCookieManager(s.id.Short().String(), guiCfg, s.evLogger, s.miscDB)
