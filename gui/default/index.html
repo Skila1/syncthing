@@ -749,6 +749,9 @@
                     <button type="button" class="btn btn-sm btn-default" ng-click="showShareDialog(folder)" ng-if="currentUser">
                       <span class="fas fa-link"></span>&nbsp;<span translate>Share</span>
                     </button>
+                    <button type="button" class="btn btn-sm btn-default" ng-click="openFileBrowser(folder)" ng-if="currentUser">
+                      <span class="fas fa-folder-open"></span>&nbsp;<span translate>Browse</span>
+                    </button>
                   </span>
                   <div class="clearfix"></div>
                 </div>
@@ -1161,6 +1164,7 @@
   <ng-include ng-if="isAdmin()" src="'syncthing/folder/folderPermissionsModalView.html'"></ng-include>
   <ng-include ng-if="currentUser" src="'syncthing/core/shareLinkModalView.html'"></ng-include>
   <ng-include ng-if="isAdmin()" src="'syncthing/admin/shareLinksManagementView.html'"></ng-include>
+  <ng-include ng-if="currentUser" src="'syncthing/core/fileBrowserModalView.html'"></ng-include>
 
   <!-- vendor scripts -->
   <script type="text/javascript" src="vendor/jquery/jquery-2.2.2.js"></script>

@@ -1,0 +1,188 @@
+<div id="fileBrowserModal" class="modal fade" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" style="width:90%; max-width:1100px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+        <h4 class="modal-title">
+          <span class="fas fa-folder-open"></span>
+          <span translate>File Browser</span> &mdash; {{fileBrowser.folderLabel}}
+        </h4>
+      </div>
+      <div class="modal-body" style="min-height:400px;">
+
+        <!-- Toolbar: search + upload + new folder -->
+        <div class="row" style="margin-bottom:12px;">
+          <div class="col-sm-5">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Search files..." ng-model="fileBrowser.searchQuery" ng-keypress="$event.keyCode == 13 && searchFiles()" />
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button" ng-click="searchFiles()">
+                  <span class="fas fa-search"></span>
+                </button>
+                <button class="btn btn-default" type="button" ng-click="clearSearch()" ng-if="fileBrowser.searchResults">
+                  <span class="fas fa-times"></span>
+                </button>
+              </span>
+            </div>
+          </div>
+          <div class="col-sm-7 text-right">
+            <button class="btn btn-default btn-sm" ng-click="showNewFolderInput()">
+              <span class="fas fa-folder-plus"></span> <span translate>New Folder</span>
+            </button>
+            <label class="btn btn-primary btn-sm" style="margin-bottom:0;">
+              <span class="fas fa-upload"></span> <span translate>Upload Files</span>
+              <input type="file" multiple style="display:none;" onchange="angular.element(this).scope().uploadFiles(this.files)" />
+            </label>
+          </div>
+        </div>
+
+        <!-- New folder inline input -->
+        <div class="row" ng-if="fileBrowser.newFolderMode" style="margin-bottom:12px;">
+          <div class="col-sm-6">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="Folder name" ng-model="fileBrowser.newFolderName" ng-keypress="$event.keyCode == 13 && createFolder()" />
+              <span class="input-group-btn">
+                <button class="btn btn-success" ng-click="createFolder()">
+                  <span class="fas fa-check"></span>
+                </button>
+                <button class="btn btn-default" ng-click="fileBrowser.newFolderMode = false">
+                  <span class="fas fa-times"></span>
+                </button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload progress -->
+        <div ng-if="fileBrowser.uploading" style="margin-bottom:12px;">
+          <div class="progress">
+            <div class="progress-bar progress-bar-striped active" style="width:100%;">
+              <span translate>Uploading...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breadcrumbs -->
+        <ol class="breadcrumb" style="margin-bottom:8px;">
+          <li ng-class="{active: fileBrowser.currentPath === ''}">
+            <a href="" ng-click="browseToPath('')" ng-if="fileBrowser.currentPath !== ''">
+              <span class="fas fa-home"></span>
+            </a>
+            <span ng-if="fileBrowser.currentPath === ''"><span class="fas fa-home"></span></span>
+          </li>
+          <li ng-repeat="crumb in fileBrowser.breadcrumbs" ng-class="{active: $last}">
+            <a href="" ng-click="browseToPath(crumb.path)" ng-if="!$last">{{crumb.name}}</a>
+            <span ng-if="$last">{{crumb.name}}</span>
+          </li>
+        </ol>
+
+        <!-- Search results mode -->
+        <div ng-if="fileBrowser.searchResults">
+          <h5><span class="fas fa-search"></span> <span translate>Search Results</span></h5>
+          <div ng-if="fileBrowser.searchResults.length === 0" class="text-muted text-center" style="padding:40px;">
+            <p translate>No results found.</p>
+          </div>
+          <div ng-repeat="group in fileBrowser.searchResults">
+            <h6 ng-if="group.folderLabel">{{group.folderLabel}} ({{group.folderId}})</h6>
+            <table class="table table-condensed table-hover">
+              <tbody>
+                <tr ng-repeat="entry in group.results" style="cursor:pointer;">
+                  <td style="width:30px;">
+                    <span ng-if="entry.isDir" class="fas fa-folder text-warning"></span>
+                    <span ng-if="!entry.isDir" class="fas fa-file text-muted"></span>
+                  </td>
+                  <td>{{entry.name}}</td>
+                  <td class="text-muted"><small>{{entry.path}}</small></td>
+                  <td class="text-right">
+                    <span ng-if="!entry.isDir">{{entry.size | binary}}B</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- File listing mode -->
+        <div ng-if="!fileBrowser.searchResults">
+          <div ng-if="fileBrowser.loading" class="text-center" style="padding:60px;">
+            <span class="fas fa-spinner fa-spin fa-2x"></span>
+          </div>
+
+          <div ng-if="!fileBrowser.loading && fileBrowser.entries.length === 0" class="text-muted text-center" style="padding:60px;">
+            <span class="fas fa-folder-open fa-3x"></span>
+            <p translate style="margin-top:12px;">This folder is empty.</p>
+          </div>
+
+          <!-- Drop zone overlay -->
+          <div id="fileBrowserDropZone" style="position:relative;"
+               ondragover="event.preventDefault(); this.classList.add('fb-dragover');"
+               ondragleave="this.classList.remove('fb-dragover');"
+               ondrop="event.preventDefault(); this.classList.remove('fb-dragover'); angular.element(this).scope().uploadFiles(event.dataTransfer.files);">
+
+            <table class="table table-condensed table-hover" ng-if="!fileBrowser.loading && fileBrowser.entries.length > 0">
+              <thead>
+                <tr>
+                  <th style="width:30px;"></th>
+                  <th translate>Name</th>
+                  <th translate style="width:120px;">Size</th>
+                  <th translate style="width:180px;">Modified</th>
+                  <th style="width:100px;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ng-if="fileBrowser.currentPath !== ''" style="cursor:pointer;" ng-click="browseUp()">
+                  <td><span class="fas fa-level-up-alt text-muted"></span></td>
+                  <td colspan="4"><em>..</em></td>
+                </tr>
+                <tr ng-repeat="entry in fileBrowser.entries | orderBy:['-isDir','name']" style="cursor:pointer;">
+                  <td ng-click="entryClick(entry)">
+                    <span ng-if="entry.isDir" class="fas fa-folder text-warning"></span>
+                    <span ng-if="!entry.isDir && isImage(entry.name)" class="fas fa-file-image text-info"></span>
+                    <span ng-if="!entry.isDir && !isImage(entry.name)" class="fas fa-file text-muted"></span>
+                  </td>
+                  <td ng-click="entryClick(entry)">{{entry.name}}</td>
+                  <td ng-click="entryClick(entry)">
+                    <span ng-if="!entry.isDir">{{entry.size | binary}}B</span>
+                  </td>
+                  <td ng-click="entryClick(entry)">
+                    {{entry.modTime | date:'short'}}
+                  </td>
+                  <td class="text-right">
+                    <a ng-if="!entry.isDir" ng-href="{{urlbase}}/files/download?folder={{fileBrowser.folderId}}&path={{entry.path}}" target="_blank" class="btn btn-xs btn-default" title="Download">
+                      <span class="fas fa-download"></span>
+                    </a>
+                    <button class="btn btn-xs btn-danger" ng-click="deleteEntry(entry)" title="Delete">
+                      <span class="fas fa-trash"></span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Image preview panel -->
+        <div ng-if="fileBrowser.preview" class="text-center" style="margin-top:12px; border:1px solid #ddd; padding:12px; border-radius:4px;">
+          <p><strong>{{fileBrowser.preview.name}}</strong></p>
+          <img ng-src="{{urlbase}}/files/preview?folder={{fileBrowser.folderId}}&path={{fileBrowser.preview.path}}" style="max-width:100%; max-height:400px;" />
+          <br />
+          <button class="btn btn-sm btn-default" style="margin-top:8px;" ng-click="fileBrowser.preview = null">
+            <span class="fas fa-times"></span> <span translate>Close Preview</span>
+          </button>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" translate>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.fb-dragover {
+  outline: 3px dashed #337ab7 !important;
+  outline-offset: -6px;
+  background: rgba(51,122,183,0.04);
+}
+</style>

@@ -114,20 +114,20 @@ Temporary download links for files and folders.
 
 ## Step 6: File Browser, Uploads & Search
 
-**Status:** Not started
+**Status:** COMPLETE
 **Est. time:** 5-6 hours
 **Depends on:** Step 4
 
 Web-based file management: browse, upload, download, search.
 
-- [ ] File browser backend (`lib/filebrowser/`) -- list directories, file metadata, previews
-- [ ] File upload endpoint with chunked upload support (`POST /rest/files/upload`)
-- [ ] File download endpoint (`GET /rest/files/download`)
-- [ ] File search endpoint (`GET /rest/files/search`) -- filename search, optional content indexing
-- [ ] GUI: file browser view (tree navigation via FancyTree, file list, metadata panel)
-- [ ] GUI: drag-and-drop upload with progress bar
-- [ ] GUI: search bar with results list
-- [ ] Respect quotas and folder permissions on all operations
+- [x] File browser backend (`lib/filebrowser/`) -- list directories, file metadata, previews
+- [x] File upload endpoint with chunked upload support (`POST /rest/files/upload`)
+- [x] File download endpoint (`GET /rest/files/download`)
+- [x] File search endpoint (`GET /rest/files/search`) -- filename search, optional content indexing
+- [x] GUI: file browser view (tree navigation via FancyTree, file list, metadata panel)
+- [x] GUI: drag-and-drop upload with progress bar
+- [x] GUI: search bar with results list
+- [x] Respect quotas and folder permissions on all operations
 
 ---
 

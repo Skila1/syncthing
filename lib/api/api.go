@@ -404,6 +404,7 @@ func (s *service) Serve(ctx context.Context) error {
 			restMux.Handler(http.MethodGet, "/rest/noauth/share/:token", http.HandlerFunc(s.getShareDownload))
 			restMux.Handler(http.MethodPost, "/rest/noauth/share/:token", http.HandlerFunc(s.postShareDownload))
 		}
+		s.registerFileBrowserEndpoints(restMux)
 	} else if guiCfg.IsAuthEnabled() {
 		tokenCookieManager := newTokenCookieManager(s.id.Short().String(), guiCfg, s.evLogger, s.miscDB)
 		authMW := newBasicAuthAndSessionMiddleware(tokenCookieManager, guiCfg, s.cfg.LDAP(), handler, s.evLogger)

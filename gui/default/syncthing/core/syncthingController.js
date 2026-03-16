@@ -1094,6 +1094,161 @@ angular.module('syncthing.core')
             });
         };
 
+        // --- File Browser ---
+
+        $scope.fileBrowser = {
+            folderId: '',
+            folderLabel: '',
+            currentPath: '',
+            entries: [],
+            breadcrumbs: [],
+            loading: false,
+            uploading: false,
+            searchQuery: '',
+            searchResults: null,
+            newFolderMode: false,
+            newFolderName: '',
+            preview: null
+        };
+
+        $scope.openFileBrowser = function (folder) {
+            $scope.fileBrowser.folderId = folder.id;
+            $scope.fileBrowser.folderLabel = folder.label || folder.id;
+            $scope.fileBrowser.currentPath = '';
+            $scope.fileBrowser.searchResults = null;
+            $scope.fileBrowser.searchQuery = '';
+            $scope.fileBrowser.preview = null;
+            $scope.fileBrowser.newFolderMode = false;
+            $scope.refreshFileBrowser();
+            $('#fileBrowserModal').modal('show');
+        };
+
+        $scope.refreshFileBrowser = function () {
+            $scope.fileBrowser.loading = true;
+            $http.get(urlbase + '/files/browse', {
+                params: { folder: $scope.fileBrowser.folderId, path: $scope.fileBrowser.currentPath }
+            }).success(function (data) {
+                $scope.fileBrowser.entries = data.entries || [];
+                $scope.fileBrowser.loading = false;
+                buildBreadcrumbs();
+            }).error(function () {
+                $scope.fileBrowser.entries = [];
+                $scope.fileBrowser.loading = false;
+            });
+        };
+
+        function buildBreadcrumbs() {
+            var path = $scope.fileBrowser.currentPath;
+            if (!path) {
+                $scope.fileBrowser.breadcrumbs = [];
+                return;
+            }
+            var parts = path.split('/');
+            var crumbs = [];
+            for (var i = 0; i < parts.length; i++) {
+                crumbs.push({
+                    name: parts[i],
+                    path: parts.slice(0, i + 1).join('/')
+                });
+            }
+            $scope.fileBrowser.breadcrumbs = crumbs;
+        }
+
+        $scope.browseToPath = function (path) {
+            $scope.fileBrowser.currentPath = path;
+            $scope.fileBrowser.preview = null;
+            $scope.fileBrowser.searchResults = null;
+            $scope.refreshFileBrowser();
+        };
+
+        $scope.browseUp = function () {
+            var path = $scope.fileBrowser.currentPath;
+            var idx = path.lastIndexOf('/');
+            $scope.browseToPath(idx > 0 ? path.substring(0, idx) : '');
+        };
+
+        $scope.entryClick = function (entry) {
+            if (entry.isDir) {
+                $scope.browseToPath(entry.path);
+            } else if ($scope.isImage(entry.name)) {
+                $scope.fileBrowser.preview = entry;
+            }
+        };
+
+        $scope.isImage = function (name) {
+            if (!name) return false;
+            var ext = name.toLowerCase().split('.').pop();
+            return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].indexOf(ext) >= 0;
+        };
+
+        $scope.uploadFiles = function (files) {
+            if (!files || files.length === 0) return;
+            $scope.fileBrowser.uploading = true;
+            var formData = new FormData();
+            for (var i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+            $http.post(urlbase + '/files/upload?folder=' + encodeURIComponent($scope.fileBrowser.folderId) + '&path=' + encodeURIComponent($scope.fileBrowser.currentPath), formData, {
+                headers: { 'Content-Type': undefined },
+                transformRequest: angular.identity
+            }).success(function () {
+                $scope.fileBrowser.uploading = false;
+                $scope.refreshFileBrowser();
+            }).error(function () {
+                $scope.fileBrowser.uploading = false;
+            });
+            $scope.$apply();
+        };
+
+        $scope.showNewFolderInput = function () {
+            $scope.fileBrowser.newFolderMode = true;
+            $scope.fileBrowser.newFolderName = '';
+        };
+
+        $scope.createFolder = function () {
+            var name = $scope.fileBrowser.newFolderName;
+            if (!name) return;
+            var path = $scope.fileBrowser.currentPath;
+            if (path) path += '/';
+            path += name;
+            $http.post(urlbase + '/files/mkdir', {
+                folderId: $scope.fileBrowser.folderId,
+                path: path
+            }).success(function () {
+                $scope.fileBrowser.newFolderMode = false;
+                $scope.refreshFileBrowser();
+            });
+        };
+
+        $scope.deleteEntry = function (entry) {
+            if (!confirm('Delete "' + entry.name + '"? This cannot be undone.')) return;
+            $http.delete(urlbase + '/files/delete', {
+                params: { folder: $scope.fileBrowser.folderId, path: entry.path }
+            }).success(function () {
+                $scope.refreshFileBrowser();
+            });
+        };
+
+        $scope.searchFiles = function () {
+            var q = $scope.fileBrowser.searchQuery;
+            if (!q) return;
+            $scope.fileBrowser.loading = true;
+            $http.get(urlbase + '/files/search', {
+                params: { q: q, folder: $scope.fileBrowser.folderId }
+            }).success(function (data) {
+                $scope.fileBrowser.searchResults = data || [];
+                $scope.fileBrowser.loading = false;
+            }).error(function () {
+                $scope.fileBrowser.searchResults = [];
+                $scope.fileBrowser.loading = false;
+            });
+        };
+
+        $scope.clearSearch = function () {
+            $scope.fileBrowser.searchResults = null;
+            $scope.fileBrowser.searchQuery = '';
+        };
+
         function refreshNoAuthWarning() {
             if (!$scope.system || !$scope.config || !$scope.config.gui) {
                 // We need all to be able to determine the state.
