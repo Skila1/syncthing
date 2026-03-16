@@ -91,7 +91,7 @@ jobs:
           echo "go-version=$(go version | sed 's#^.*go##;s# .*##')" >> $GITHUB_OUTPUT
 
   #
-  # Tests for all platforms. Runs a matrix build on Windows, Linux and Mac,
+  # Tests for all platforms. Runs a matrix build on Windows and Linux,
   # with the list of expected supported Go versions (current, previous).
   #
 
@@ -100,7 +100,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: ["windows-latest", "ubuntu-latest", "macos-latest"]
+        runner: ["windows-latest", "ubuntu-latest"]
         # The oldest version in this list should match what we have in our go.mod.
         # Variables don't seem to be supported here, or we could have done something nice.
         go: ["~1.25.0", "~1.26.0"]
@@ -159,8 +159,6 @@ jobs:
     needs:
       - build-test
       - package-linux
-      - package-illumos
-      - package-cross
       - package-source
       - package-debian
       - package-windows
@@ -338,239 +336,6 @@ jobs:
             *.tar.gz
             compat.json
 
-  package-illumos:
-    runs-on: ubuntu-latest
-    name: Package for illumos
-    needs:
-      - facts
-    env:
-      VERSION: ${{ needs.facts.outputs.version }}
-      GO_VERSION: ${{ needs.facts.outputs.go-version }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Build syncthing in OmniOS VM
-        uses: vmactions/omnios-vm@v1
-        with:
-          envs: "VERSION GO_VERSION CGO_ENABLED"
-          usesh: true
-          prepare: |
-            pkg install developer/gcc14 web/curl archiver/gnu-tar
-          run: |
-            curl -L "https://go.dev/dl/go$GO_VERSION.illumos-amd64.tar.gz" | gtar xzf -
-            export PATH="$GITHUB_WORKSPACE/go/bin:$PATH"
-            go version
-            for tgt in syncthing stdiscosrv strelaysrv ; do
-              go run build.go -tags "${{env.TAGS}}" tar "$tgt"
-            done
-        env:
-          CGO_ENABLED: "1"
-
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: packages-illumos
-          path: "*.tar.gz"
-  #
-  # macOS. The entire build runs in the release environment because code
-  # signing is part of the build process, so it is limited to release
-  # branches on the Syncthing repo.
-  #
-
-  package-macos:
-    name: Package for macOS
-    if: github.repository_owner == 'syncthing' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/release-nightly' || startsWith(github.ref, 'refs/tags/v'))
-    environment: release
-    runs-on: macos-latest
-    needs:
-      - facts
-    env:
-      CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
-      VERSION: ${{ needs.facts.outputs.version }}
-      RELEASE_KIND: ${{ needs.facts.outputs.release-kind }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ needs.facts.outputs.go-version }}
-          cache: false
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ needs.facts.outputs.go-version }}-package-${{ hashFiles('go.sum') }}
-
-      - name: Import signing certificate
-        if: env.CODESIGN_IDENTITY != ''
-        run: |
-          # Set up a run-specific keychain, making it available for the
-          # `codesign` tool.
-          umask 066
-          KEYCHAIN_PATH=$RUNNER_TEMP/codesign.keychain
-          KEYCHAIN_PASSWORD=$(uuidgen)
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security default-keychain -s "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-
-          # Import the certificate
-          CERTIFICATE_PATH=$RUNNER_TEMP/codesign.p12
-          echo "$DEVELOPER_ID_CERTIFICATE_BASE64" | base64 -d -o "$CERTIFICATE_PATH"
-          security import "$CERTIFICATE_PATH" -k "$KEYCHAIN_PATH" -P "$DEVELOPER_ID_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productsign
-          security set-key-partition-list -S apple-tool:,apple: -s -k actions "$KEYCHAIN_PATH"
-
-          # Set the codesign identity for following steps
-          echo "CODESIGN_IDENTITY=$CODESIGN_IDENTITY" >> $GITHUB_ENV
-        env:
-          DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
-          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
-          CODESIGN_IDENTITY: ${{ secrets.CODESIGN_IDENTITY }}
-
-      - name: Create package (amd64)
-        run: |
-          for tgt in syncthing stdiscosrv strelaysrv ; do
-            go run build.go -tags "${{env.TAGS}}" -goarch amd64 zip "$tgt"
-          done
-        env:
-          CGO_ENABLED: "1"
-
-      - name: Create package (arm64 cross)
-        run: |
-          cat <<EOT > xgo.sh
-          #!/bin/bash
-          CGO_ENABLED=1 \
-            CGO_CFLAGS="-target arm64-apple-macos10.15" \
-            CGO_LDFLAGS="-target arm64-apple-macos10.15" \
-            go "\$@"
-          EOT
-          chmod 755 xgo.sh
-          for tgt in syncthing stdiscosrv strelaysrv ; do
-            go run build.go -tags "${{env.TAGS}}" -gocmd ./xgo.sh -goarch arm64 zip "$tgt"
-          done
-        env:
-          CGO_ENABLED: "1"
-
-      - name: Create package (universal)
-        run: |
-          rm -rf _tmp
-          mkdir _tmp
-          pushd _tmp
-
-          unzip ../syncthing-macos-amd64-*.zip
-          unzip ../syncthing-macos-arm64-*.zip
-          lipo -create syncthing-macos-amd64-*/syncthing syncthing-macos-arm64-*/syncthing -o syncthing
-
-          amd64=(syncthing-macos-amd64-*)
-          universal="${amd64/amd64/universal}"
-          mv "$amd64" "$universal"
-          mv syncthing "$universal"
-          zip -r "../$universal.zip" "$universal"
-
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: packages-macos
-          path: "*.zip"
-
-  notarize-macos:
-    name: Notarize for macOS
-    if: github.repository_owner == 'syncthing' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/release-nightly' || startsWith(github.ref, 'refs/tags/v'))
-    environment: release
-    needs:
-      - package-macos
-    runs-on: macos-latest
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v7
-        with:
-          name: packages-macos
-
-      - name: Notarize binaries
-        run: |
-          APPSTORECONNECT_API_KEY_PATH="$RUNNER_TEMP/apikey.p8"
-          echo "$APPSTORECONNECT_API_KEY" | base64 -d -o "$APPSTORECONNECT_API_KEY_PATH"
-          for file in *-macos-*.zip ; do
-            xcrun notarytool submit \
-              -k "$APPSTORECONNECT_API_KEY_PATH" \
-              -d "$APPSTORECONNECT_API_KEY_ID" \
-              -i "$APPSTORECONNECT_API_KEY_ISSUER" \
-              $file
-          done
-        env:
-          APPSTORECONNECT_API_KEY: ${{ secrets.APPSTORECONNECT_API_KEY }}
-          APPSTORECONNECT_API_KEY_ID: ${{ secrets.APPSTORECONNECT_API_KEY_ID }}
-          APPSTORECONNECT_API_KEY_ISSUER: ${{ secrets.APPSTORECONNECT_API_KEY_ISSUER }}
-
-  #
-  # Cross compile other unixes
-  #
-
-  package-cross:
-    name: Package cross compiled
-    runs-on: ubuntu-latest
-    needs:
-      - facts
-    env:
-      VERSION: ${{ needs.facts.outputs.version }}
-      RELEASE_KIND: ${{ needs.facts.outputs.release-kind }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-go@v6
-        with:
-          go-version: ${{ needs.facts.outputs.go-version }}
-          cache: false
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ needs.facts.outputs.go-version }}-cross-${{ hashFiles('go.sum') }}
-
-      - name: Create packages
-        run: |
-          platforms=$(go tool dist list \
-            | grep -v aix/ppc64 \
-            | grep -v android/ \
-            | grep -v darwin/ \
-            | grep -v illumos/ \
-            | grep -v ios/ \
-            | grep -v js/ \
-            | grep -v linux/ \
-            | grep -v nacl/ \
-            | grep -v plan9/ \
-            | grep -v windows/ \
-            | grep -v /wasm \
-          )
-
-          # Build for each platform with errors silenced, because we expect
-          # some oddball platforms to fail. This avoids a bunch of errors in
-          # the GitHub Actions output, instead summarizing each build
-          # failure as a warning.
-          for plat in $platforms; do
-            goos="${plat%/*}"
-            goarch="${plat#*/}"
-            echo "::group ::$plat"
-            for tgt in syncthing stdiscosrv strelaysrv ; do
-              if ! go run build.go -goos "$goos" -goarch "$goarch" tar "$tgt" ; then
-                echo "::warning ::Failed to build $tgt for $plat"
-              fi
-            done
-            echo "::endgroup::"
-          done
-        env:
-          CGO_ENABLED: "0"
-
-      - name: Archive artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: packages-other
-          path: "*.tar.gz"
-
   #
   # Source
   #
@@ -623,9 +388,6 @@ jobs:
     needs:
       - codesign-windows
       - package-linux
-      - package-illumos
-      - package-macos
-      - package-cross
       - package-source
       - facts
     env:

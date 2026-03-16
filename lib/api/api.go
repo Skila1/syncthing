@@ -58,6 +58,7 @@ import (
 	"github.com/syncthing/syncthing/lib/tlsutil"
 	"github.com/syncthing/syncthing/lib/upgrade"
 	"github.com/syncthing/syncthing/lib/ur"
+	"github.com/syncthing/syncthing/lib/users"
 )
 
 const (
@@ -84,6 +85,7 @@ type service struct {
 	connectionsService   connections.Service
 	fss                  model.FolderSummaryService
 	urService            *ur.Service
+	userManager          *users.Manager
 	noUpgrade            bool
 	tlsDefaultCommonName string
 	configChanged        chan struct{} // signals intentional listener close due to config change
@@ -107,7 +109,7 @@ type Service interface {
 	WaitForStart() error
 }
 
-func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed) Service {
+func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonName string, m model.Model, defaultSub, diskSub events.BufferedSubscription, evLogger events.Logger, discoverer discover.Manager, connectionsService connections.Service, urService *ur.Service, fss model.FolderSummaryService, errors, systemLog slogutil.Recorder, noUpgrade bool, miscDB *db.Typed, userManager *users.Manager) Service {
 	return &service{
 		id:      id,
 		cfg:     cfg,
@@ -122,6 +124,7 @@ func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonNam
 		connectionsService:   connectionsService,
 		fss:                  fss,
 		urService:            urService,
+		userManager:          userManager,
 		guiErrors:            errors,
 		systemLog:            systemLog,
 		noUpgrade:            noUpgrade,
@@ -368,15 +371,29 @@ func (s *service) Serve(ctx context.Context) error {
 	// Add our version and ID as a header to responses
 	handler = withDetailsMiddleware(s.id, handler)
 
-	// Wrap everything in basic auth, if user/password is set.
-	if guiCfg.IsAuthEnabled() {
+	// Multi-user auth: if the user manager is available and has users,
+	// use multi-user authentication. Otherwise fall back to legacy
+	// single-user auth from GUIConfiguration.
+	multiUserAuth := false
+	if s.userManager != nil {
+		hasUsers, _ := s.userManager.HasUsers()
+		multiUserAuth = hasUsers
+	}
+
+	if multiUserAuth {
+		muAuthMW := newMultiUserAuthMiddleware(s.id.Short().String(), guiCfg, s.userManager, s.evLogger, handler)
+		handler = muAuthMW
+
+		restMux.Handler(http.MethodPost, "/rest/noauth/auth/password", http.HandlerFunc(muAuthMW.passwordAuthHandler))
+		restMux.Handler(http.MethodPost, "/rest/noauth/auth/logout", http.HandlerFunc(muAuthMW.handleLogout))
+
+		s.registerUserEndpoints(restMux)
+	} else if guiCfg.IsAuthEnabled() {
 		tokenCookieManager := newTokenCookieManager(s.id.Short().String(), guiCfg, s.evLogger, s.miscDB)
 		authMW := newBasicAuthAndSessionMiddleware(tokenCookieManager, guiCfg, s.cfg.LDAP(), handler, s.evLogger)
 		handler = authMW
 
 		restMux.Handler(http.MethodPost, "/rest/noauth/auth/password", http.HandlerFunc(authMW.passwordAuthHandler))
-
-		// Logout is a no-op without a valid session cookie, so /noauth/ is fine here
 		restMux.Handler(http.MethodPost, "/rest/noauth/auth/logout", http.HandlerFunc(authMW.handleLogout))
 	}
 
@@ -695,12 +712,21 @@ func (*service) getSystemPaths(w http.ResponseWriter, _ *http.Request) {
 	sendJSON(w, locations.ListExpandedPaths())
 }
 
-func (s *service) getJSMetadata(w http.ResponseWriter, _ *http.Request) {
-	meta, _ := json.Marshal(map[string]interface{}{
+func (s *service) getJSMetadata(w http.ResponseWriter, r *http.Request) {
+	metaMap := map[string]interface{}{
 		"deviceID":      s.id.String(),
 		"deviceIDShort": s.id.Short().String(),
 		"authenticated": true,
-	})
+	}
+
+	if user := userFromRequest(r); user != nil {
+		metaMap["username"] = user.Username
+		metaMap["userRole"] = user.Role
+		metaMap["userId"] = user.ID
+		metaMap["multiUser"] = true
+	}
+
+	meta, _ := json.Marshal(metaMap)
 	w.Header().Set("Content-Type", "application/javascript")
 	fmt.Fprintf(w, "var metadata = %s;\n", meta)
 }
