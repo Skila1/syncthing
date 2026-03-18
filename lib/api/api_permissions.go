@@ -16,8 +16,8 @@ import (
 )
 
 func (s *service) registerPermissionEndpoints(mux *httprouter.Router) {
-	mux.HandlerFunc(http.MethodGet, "/rest/folders/permissions", s.getUserFolderPermissions)
-	mux.HandlerFunc(http.MethodGet, "/rest/devices/ownership", s.getUserDeviceOwnership)
+	mux.HandlerFunc(http.MethodGet, "/rest/user/folders/permissions", s.getUserFolderPermissions)
+	mux.HandlerFunc(http.MethodGet, "/rest/user/devices/ownership", s.getUserDeviceOwnership)
 	mux.HandlerFunc(http.MethodGet, "/rest/folders/:id/permissions", requireAdmin(s.getFolderPermissionsFunc))
 	mux.HandlerFunc(http.MethodPut, "/rest/folders/:id/permissions", s.putFolderPermissionFunc)
 	mux.HandlerFunc(http.MethodDelete, "/rest/folders/:id/permissions/:userId", s.deleteFolderPermissionFunc)
