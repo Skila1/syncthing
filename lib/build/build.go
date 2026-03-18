@@ -8,7 +8,6 @@ package build
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"runtime"
