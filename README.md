@@ -24,7 +24,7 @@ Multi-user authentication, per-user isolated storage roots, role-based access (a
 - [x] Initial admin account via `ST_ADMIN_USER` / `ST_ADMIN_PASSWORD` env vars
 - [x] Docker entrypoint updates for per-user directories
 
-### Step 2: User Quotas & Disk Usage Dashboard
+### Step 2: User Quotas & Disk Usage Dashboard -- COMPLETE
 
 Admin-controlled storage quotas per user with real-time usage tracking.
 
@@ -33,7 +33,7 @@ Admin-controlled storage quotas per user with real-time usage tracking.
 - [x] Warning thresholds (80%, 95%)
 - [x] Admin + user storage dashboards
 
-### Step 3: Password Reset & MFA/2FA
+### Step 3: Password Reset & MFA/2FA -- COMPLETE
 
 Password recovery and TOTP-based two-factor authentication.
 
@@ -41,7 +41,7 @@ Password recovery and TOTP-based two-factor authentication.
 - [x] TOTP MFA enrollment, verification, and recovery codes
 - [x] "Remember this device" support
 
-### Step 4: Access Control & Folder Permissions
+### Step 4: Access Control & Folder Permissions -- COMPLETE
 
 Per-folder permissions: private, shared with specific users, read-only.
 
@@ -49,7 +49,7 @@ Per-folder permissions: private, shared with specific users, read-only.
 - [x] Device ownership linked to users
 - [x] Permission enforcement at API and sync engine layers
 
-### Step 5: Share Links
+### Step 5: Share Links -- COMPLETE
 
 Temporary, optionally password-protected download links.
 
@@ -57,7 +57,7 @@ Temporary, optionally password-protected download links.
 - [x] Public download endpoint (no auth)
 - [x] Admin link management
 
-### Step 6: File Browser, Uploads & Search
+### Step 6: File Browser, Uploads & Search -- COMPLETE
 
 Web-based file management directly in the GUI.
 
@@ -65,7 +65,7 @@ Web-based file management directly in the GUI.
 - [x] Chunked file upload with drag-and-drop
 - [x] Filename search
 
-### Step 7: Trash, Version History & Cleanup Policies
+### Step 7: Trash, Version History & Cleanup Policies -- COMPLETE
 
 Soft deletes, file versioning, and automatic cleanup.
 
@@ -73,7 +73,7 @@ Soft deletes, file versioning, and automatic cleanup.
 - [x] File version history with restore
 - [x] Cleanup policy scheduler
 
-### Step 8: Activity Feed & Notifications
+### Step 8: Activity Feed & Notifications -- COMPLETE
 
 User-scoped activity tracking and change alerts.
 
