@@ -1,4 +1,4 @@
-ARG GOVERSION=latest
+ARG GOVERSION=1.26
 
 #
 # Maybe build Syncthing. This is a bit ugly as we can't make an entire
@@ -7,7 +7,7 @@ ARG GOVERSION=latest
 # exists (pre-built) otherwise we build it.
 #
 
-FROM golang:$GOVERSION-alpine AS builder
+FROM golang:${GOVERSION}-alpine AS builder
 ARG BUILD_USER
 ARG BUILD_HOST
 ARG TARGETARCH
